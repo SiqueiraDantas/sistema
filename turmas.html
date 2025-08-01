@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Turmas</title>
+  <link rel="stylesheet" href="css/turmas.css" />
+</head>
+<body>
+  <div class="turmas-container">
+    <h2>Turmas</h2>
+
+    <label for="filtroTurma">Selecione a Oficina:</label>
+    <select id="filtroTurma">
+      <option value="">Todas</option>
+    </select>
+
+    <div id="tabelaContainer">
+      <table id="tabelaTurmas">
+        <thead>
+          <tr>
+            <th>Matrícula</th>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Escola</th>
+            <th>Responsável</th>
+            <th>Telefone</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabelaTurmas"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script type="module" src="js/turmas.js"></script>
+</body>
+</html>

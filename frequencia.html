@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Frequência</title>
+  <link rel="stylesheet" href="css/frequencia.css">
+</head>
+<body>
+  <div class="frequencia-container">
+    <h2>Registro de Frequência</h2>
+
+    <div class="filtros">
+      <label for="turma">Oficina/Turma:</label>
+      <select id="turmaSelect">
+        <option value="">Selecione</option>
+      </select>
+
+      <label for="dataAula">Data da Aula:</label>
+      <input type="date" id="dataAula">
+    </div>
+
+    <div id="tabelaContainer">
+      <table id="tabelaFrequencia">
+        <thead>
+          <tr>
+            <th>Nome do Aluno</th>
+            <th>Presença</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabela"></tbody>
+      </table>
+    </div>
+
+    <button id="salvarBtn">Salvar Frequência</button>
+    <div id="toast" class="hidden">Frequência salva com sucesso!</div>
+  </div>
+
+  <!-- Modal para justificativa -->
+  <div class="modal hidden" id="modalJustificativa">
+    <div class="modal-content">
+      <h3>Falta Justificada</h3>
+      <label for="categoria">Categoria:</label>
+      <select id="categoria">
+        <option value="Saúde">Saúde</option>
+        <option value="Compromisso">Compromisso</option>
+        <option value="Outro">Outro</option>
+      </select>
+
+      <label for="anexo">Anexo:</label>
+      <input type="file" id="anexo">
+
+      <div class="modal-buttons">
+        <button id="cancelarModal">Cancelar</button>
+        <button id="confirmarModal">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/frequencia.js"></script>
+</body>
+</html>

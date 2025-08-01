@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal do Professor - MIS Educa</title>
+  <link rel="stylesheet" href="css/professor.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="assets/logo-mis.png" alt="Logo MIS Educa" style="height: 50px; object-fit: contain;" />
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-chalkboard-teacher"></i> Início</a></li>
+          <li><a href="#" data-page="plano_de_aula"><i class="fas fa-book-open"></i> Plano de Aula</a></li>
+          <li><a href="#" data-page="frequencia"><i class="fas fa-user-check"></i> Frequência</a></li>
+          <li><a href="#" data-page="turmas"><i class="fas fa-users"></i> Turmas</a></li>
+          <li><a href="#" data-page="relatorio_mensal"><i class="fas fa-file-alt"></i> Relatórios</a></li>
+          <li><a href="#" data-page="ajuda"><i class="fas fa-question-circle"></i> Ajuda</a></li>
+          <li><a href="#" id="logout" class="logout"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div class="welcome">
+          <h1>Bem-vindo(a), Professor!</h1>
+        </div>
+        <div class="profile">
+          <i class="fas fa-bell"></i>
+          <img src="assets/avatar_professor.jpg" alt="Foto do Professor" class="avatar" />
+        </div>
+      </header>
+
+      <section id="main-content" class="dashboard">
+        <h2>Painel do Professor</h2>
+        <div class="cards">
+          <div class="card destaque">
+            <h3>Turmas Atribuídas</h3>
+            <p>3</p>
+          </div>
+          <div class="card">
+            <h3>Planos de Aula</h3>
+            <p>5 registrados</p>
+          </div>
+          <div class="card">
+            <h3>Frequência</h3>
+            <p>Atualizada</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="js/professor.js"></script>
+</body>
+</html>

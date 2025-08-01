@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap' );
+
+/* --- ESTILOS GERAIS --- */
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f9f9f9;
+  margin: 0;
+  padding: 20px;
+}
+
+.turmas-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+  color: #F26729; /* Mantendo o laranja do título do seu projeto */
+  margin-bottom: 20px;
+  text-align: left;
+  font-weight: 800;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+  margin-top: 15px;
+}
+
+select {
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  min-width: 300px;
+}
+
+/* --- CONTAINER PARA ROLAGEM RESPONSIVA --- */
+/* Este container é a chave para a responsividade com rolagem */
+.tabela-wrapper {
+  width: 100%;
+  overflow-x: auto; /* Permite a rolagem horizontal APENAS se o conteúdo for maior que a tela */
+  margin-top: 20px;
+  -webkit-overflow-scrolling: touch; /* Melhora a experiência de rolagem em iOS */
+}
+
+/* --- ESTILO DA TABELA (FIEL À SUA IMAGEM) --- */
+table {
+  width: 100%;
+  border-collapse: collapse; /* Remove espaço entre as bordas */
+  border-spacing: 0;
+}
+
+th, td {
+  padding: 12px 10px; /* Padding vertical e horizontal */
+  border: none; /* Remove todas as bordas, como na sua imagem */
+  text-align: left;
+  font-size: 14px;
+  vertical-align: middle; /* Alinha o texto no meio da célula */
+  white-space: nowrap; /* Impede que o texto quebre, essencial para a rolagem horizontal */
+}
+
+/* Estilo do cabeçalho (Thead) */
+th {
+  font-weight: 800; /* Negrito forte */
+  text-transform: uppercase; /* Opcional: deixa os cabeçalhos em maiúsculas */
+  color: #333; /* Cor escura para o texto do cabeçalho */
+  border-bottom: 2px solid #e0e0e0; /* Apenas uma linha cinza clara embaixo do cabeçalho */
+}
+
+/* Estilo para as linhas de dados (TR) */
+tbody tr {
+    border-bottom: 1px solid #f0f0f0; /* Linha separadora muito sutil entre as linhas */
+}
+
+/* Remove a borda da última linha para um acabamento limpo */
+tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Opcional: Adiciona um leve sombreado em linhas alternadas para melhor legibilidade */
+tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}

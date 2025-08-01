@@ -1,0 +1,31 @@
+<section class="ajuda">
+  <h2>Ajuda e Suporte</h2>
+
+  <div class="documentacao">
+    <h3>📘 Documentação do Sistema</h3>
+    <ul>
+      <li><strong>Plano de Aula:</strong> cadastre os planos por turma e data.</li>
+      <li><strong>Frequência:</strong> marque presença, falta ou justificada por aula.</li>
+      <li><strong>Relatórios:</strong> registre as atividades mensais das turmas.</li>
+      <li><strong>Turmas:</strong> veja os alunos inscritos e seus dados.</li>
+    </ul>
+  </div>
+
+  <hr style="margin: 30px 0;">
+
+  <div class="form-suporte">
+    <h3>✉️ Enviar mensagem ao suporte</h3>
+    <form id="formAjuda">
+      <label for="assunto">Assunto:</label>
+      <input type="text" id="assunto" name="assunto" required placeholder="Ex: Erro ao registrar frequência">
+
+      <label for="mensagem">Mensagem:</label>
+      <textarea id="mensagem" name="mensagem" rows="5" required placeholder="Descreva o problema ou dúvida..."></textarea>
+
+      <button type="submit">Enviar Mensagem</button>
+    </form>
+    <p id="respostaSuporte" style="margin-top: 10px;"></p>
+  </div>
+</section>
+
+<script type="module" src="../js/ajuda.js"></script>
