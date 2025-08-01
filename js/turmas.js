@@ -1,16 +1,32 @@
-// 1. IMPORTA O 'db' E AS FUNÇÕES DO FIRESTORE
-import { db } from './firebase-config.js';
+// 1. IMPORTA TUDO O QUE PRECISAMOS DO FIREBASE
+import { db, auth, onAuthStateChanged } from './firebase-config.js'; // Importa db e agora também a autenticação
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// --- GUARDA DE AUTENTICAÇÃO ---
+// Este bloco de código verifica se o usuário está logado ANTES de tentar carregar qualquer dado.
+onAuthStateChanged(auth, (user ) => {
+  if (user) {
+    // Se o usuário ESTIVER logado, o código prossegue e inicializa a página.
+    console.log("Usuário autenticado. Carregando dados...");
+    inicializarPagina();
+  } else {
+    // Se o usuário NÃO ESTIVER logado, ele é redirecionado para a página de login.
+    console.log("Usuário não autenticado. Redirecionando para a página de login.");
+    // IMPORTANTE: Altere 'index.html' para o nome exato da sua página de login, se for diferente.
+    window.location.href = 'index.html';
+  }
+});
+// --- FIM DO GUARDA ---
+
+
 // 2. REFERÊNCIAS AOS ELEMENTOS DO HTML
-const filtroTurma = document.getElementById("filtroTurma" );
+const filtroTurma = document.getElementById("filtroTurma");
 const corpoTabelaTurmas = document.getElementById("corpoTabelaTurmas");
 
-// 3. FUNÇÕES
+// 3. FUNÇÕES (O conteúdo delas permanece o mesmo)
 
 async function carregarOficinasUnicas() {
   try {
-    // CAMINHO CORRIGIDO FINALMENTE: Acessando 'matriculas' como coleção raiz
     const matriculasCollection = collection(db, "matriculas");
     const snapshot = await getDocs(matriculasCollection);
     const oficinasSet = new Set();
@@ -44,7 +60,6 @@ async function carregarOficinasUnicas() {
 async function carregarAlunos(oficinaSelecionada = "") {
   corpoTabelaTurmas.innerHTML = '<tr><td colspan="7">Carregando alunos...</td></tr>';
   try {
-    // CAMINHO CORRIGIDO FINALMENTE: Acessando 'matriculas' como coleção raiz
     const matriculasCollection = collection(db, "matriculas");
     const snapshot = await getDocs(matriculasCollection);
     const alunos = [];
@@ -81,7 +96,7 @@ async function carregarAlunos(oficinaSelecionada = "") {
     alunos.sort((a, b) => a.nome.localeCompare(b.nome));
     alunos.forEach(aluno => {
       const linha = document.createElement("tr");
-      linha.innerHTML = `<td>${aluno.matricula}</td><td>${aluno.nome}</td><td>${aluno.cpf}</td><td>${aluno.escola}</td><td>${aluno.responsavel}</td><td>${aluno.telefone}</td><td>${aluno.email}</td>`;
+      linha.innerHTML = `<td data-label="Matrícula">${aluno.matricula}</td><td data-label="Nome">${aluno.nome}</td><td data-label="CPF">${aluno.cpf}</td><td data-label="Escola">${aluno.escola}</td><td data-label="Responsável">${aluno.responsavel}</td><td data-label="Telefone">${aluno.telefone}</td><td data-label="Email">${aluno.email}</td>`;
       corpoTabelaTurmas.appendChild(linha);
     });
 
@@ -92,6 +107,7 @@ async function carregarAlunos(oficinaSelecionada = "") {
 }
 
 // 4. INICIALIZAÇÃO DA PÁGINA
+// Esta função agora só é chamada se o usuário estiver autenticado.
 async function inicializarPagina() {
   filtroTurma.addEventListener("change", (e) => {
     carregarAlunos(e.target.value);
@@ -100,4 +116,4 @@ async function inicializarPagina() {
   await carregarAlunos();
 }
 
-inicializarPagina();
+// A chamada direta 'inicializarPagina();' foi removida daqui e colocada dentro do verificador de login.
