@@ -1,0 +1,35 @@
+<div class="admin-gerenciador-container">
+  <h2>Gerenciador de Turmas</h2>
+
+  <div class="filtros-container">
+    <div class="filtro-item">
+      <label for="filtro-oficina-turmas">Filtrar por Oficina:</label>
+      <select id="filtro-oficina-turmas">
+        <option value="">Todas</option>
+        <!-- Opções de oficina serão carregadas via JS -->
+      </select>
+    </div>
+    <div class="filtro-item">
+      <label for="filtro-professor-turmas">Pesquisar por Professor:</label>
+      <input type="text" id="filtro-professor-turmas" placeholder="Digite o nome do professor...">
+    </div>
+  </div>
+
+  <div class="tabela-wrapper">
+    <table class="tabela-padrao">
+      <thead>
+        <tr>
+          <th>Nome do Aluno</th>
+          <th>Nome do Responsável</th>
+          <th>Telefone do Responsável</th>
+          <th>Oficina(s)</th>
+          <th>Professor(es)</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela-turmas">
+        <!-- Dados da tabela serão inseridos aqui pelo JavaScript -->
+        <tr><td colspan="5">Carregando turmas...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>

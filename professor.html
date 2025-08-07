@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal do Professor - MIS Educa</title>
+  <link rel="stylesheet" href="css/professor.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Barra Lateral de Navegação -->
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="assets/logo-mis.png" alt="Logo MIS Educa" style="height: 50px; object-fit: contain;" />
+      </div>
+      <nav>
+        <ul>
+          <!-- O atributo 'data-page' corresponde ao nome do arquivo .html a ser carregado -->
+          <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-chalkboard-teacher"></i> Início</a></li>
+          <li><a href="#" data-page="plano_de_aula"><i class="fas fa-book-open"></i> Plano de Aula</a></li>
+          <li><a href="#" data-page="frequencia"><i class="fas fa-user-check"></i> Frequência</a></li>
+          <li><a href="#" data-page="turmas"><i class="fas fa-users"></i> Turmas</a></li>
+          <li><a href="#" data-page="relatorio"><i class="fas fa-file-alt"></i> Relatórios</a></li>
+          <li><a href="#" id="logout" class="logout"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Conteúdo Principal da Página -->
+    <main class="content">
+      <!-- Barra Superior -->
+      <header class="topbar">
+        <div class="welcome">
+          <h1>Bem-vindo(a ), Professor!</h1>
+        </div>
+        <div class="profile">
+          <i class="fas fa-bell"></i>
+          <img src="assets/avatar.jpg" alt="Foto do Professor" class="avatar" />
+        </div>
+      </header>
+
+      <!-- Seção de Conteúdo Dinâmico -->
+      <section id="main-content">
+        <!-- O conteúdo (dashboard, turmas, etc.) será carregado aqui pelo professor.js -->
+      </section>
+    </main>
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- MODAL DE EDIÇÃO (POSIÇÃO CORRETA E ÚNICA) -->
+  <!-- ======================================================= -->
+  <div id="modal-editar-oficinas" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" title="Fechar">&times;</button>
+      <h3>Editar Oficinas de <span id="modal-nome-aluno" style="color: #F26729;"></span></h3>
+      <p>Selecione as novas oficinas. Use Ctrl (ou Cmd em Mac) para selecionar várias.</p>
+      <select id="modal-select-oficinas" multiple size="8"></select>
+      <button id="modal-btn-salvar" class="btn-acao editar">Salvar Alterações</button>
+    </div>
+  </div>
+  <!-- ======================================================= -->
+
+  <!-- Script principal que controla a página -->
+  <script type="module" src="js/professor.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+
+  <!-- gerenciar_planos.html (NOVO - Focado 100% no Admin) -->
+  <div class="admin-gerenciador-container">
+    <div class="header-turmas">
+      <h2>Gerenciador de Planos de Aula</h2>
+      <button id="btn-imprimir-planos" class="btn-acao">
+        <i class="fas fa-print"></i> Imprimir Lista
+      </button>
+    </div>
+
+    <div class="filtros-container">
+      <div class="filtro-item">
+        <label for="filtro-planos-oficina">Filtrar por Oficina:</label>
+        <select id="filtro-planos-oficina">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtro-planos-professor">Pesquisar por Professor:</label>
+        <input type="text" id="filtro-planos-professor" placeholder="Digite o nome do professor...">
+      </div>
+    </div>
+
+    <div class="tabela-wrapper">
+      <table id="tabela-planos-admin">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Título da Aula</th>
+            <th>Oficina</th>
+            <th>Professor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela-planos-admin"></tbody>
+      </table>
+    </div>
+  </div>

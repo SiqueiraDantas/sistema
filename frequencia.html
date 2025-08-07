@@ -1,0 +1,69 @@
+<!-- frequencia.html (VERSÃO FINAL E CORRIGIDA COM FILTRO DE DISTRITO) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Frequência</title>
+  <!-- O CSS é carregado pelo professor.html, então não é necessário aqui -->
+</head>
+<body>
+  <div class="frequencia-container">
+    <h2>Registro de Frequência</h2>
+
+    <div class="filtros">
+      <div class="filtro-item">
+        <label for="turmaSelect">Oficina/Turma:</label>
+        <select id="turmaSelect">
+          <option value="">Selecione uma oficina</option>
+        </select>
+      </div>
+      
+      <!-- NOVO: Filtro de Distrito para Percussão/Fanfarra -->
+      <div class="filtro-item" id="filtroDistritoContainer" style="display: none;">
+        <label for="distritoSelect">Distrito/Turma:</label>
+        <select id="distritoSelect">
+          <option value="">Selecione um distrito</option>
+          <option value="Sede">Sede (Todos os bairros da sede)</option>
+          <option value="Macaoca">Macaoca</option>
+          <option value="Cajazeiras">Cajazeiras</option>
+          <option value="União">União</option>
+          <option value="Cacimba Nova">Cacimba Nova</option>
+          <option value="Paus Branco">Paus Branco</option>
+        </select>
+      </div>
+      
+      <div class="filtro-item">
+        <label for="dataAula">Data da Aula:</label>
+        <input type="date" id="dataAula">
+      </div>
+    </div>
+
+    <!-- O ID que faltava foi adicionado aqui -->
+    <div id="tabelaContainer">
+      <table id="tabelaFrequencia">
+        <thead>
+          <tr>
+            <th>Nome do Aluno</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="corpoTabela"></tbody>
+      </table>
+    </div>
+
+    <!-- O botão de salvar agora está dentro do container principal -->
+    <button id="salvarBtn" style="display: none;">Salvar Frequência</button>
+    
+    <!-- O toast de notificação -->
+    <div id="toast" class="toast-notification hidden">Frequência salva com sucesso!</div>
+  </div>
+
+  <!-- O modal de justificativa (se você decidir usá-lo no futuro) -->
+  <!-- 
+  <div class="modal hidden" id="modalJustificativa">
+    ...
+  </div>
+  -->
+</body>
+</html>

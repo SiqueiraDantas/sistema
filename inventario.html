@@ -1,0 +1,223 @@
+<!-- inventario.html (Sistema de Inventário de Instrumentos) -->
+<div class="inventario-container">
+  <div class="header-inventario">
+    <h2>Inventário de Instrumentos</h2>
+    <button id="btn-novo-instrumento" class="btn-acao">
+      <i class="fas fa-plus"></i> Novo Instrumento
+    </button>
+  </div>
+
+  <!-- Filtros de Busca -->
+  <div class="filtros-container">
+    <div class="filtro-item">
+      <label for="filtro-tipo-instrumento">Tipo de Instrumento:</label>
+      <select id="filtro-tipo-instrumento">
+        <option value="">Todos</option>
+        <option value="Sopro">Sopro</option>
+        <option value="Corda">Corda</option>
+        <option value="Percussão">Percussão</option>
+        <option value="Teclado">Teclado</option>
+      </select>
+    </div>
+    <div class="filtro-item">
+      <label for="filtro-status-custodia">Status de Custódia:</label>
+      <select id="filtro-status-custodia">
+        <option value="">Todos</option>
+        <option value="Disponível">Disponível</option>
+        <option value="Emprestado">Emprestado</option>
+        <option value="Em Manutenção">Em Manutenção</option>
+        <option value="Fora de Uso">Fora de Uso</option>
+      </select>
+    </div>
+    <div class="filtro-item">
+      <label for="pesquisa-instrumento">Pesquisar:</label>
+      <input type="text" id="pesquisa-instrumento" placeholder="Nome, número ou responsável...">
+    </div>
+  </div>
+
+  <!-- Tabela de Instrumentos -->
+  <div class="tabela-wrapper">
+    <table id="tabela-inventario">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Nome do Instrumento</th>
+          <th>Tipo</th>
+          <th>Status de Custódia</th>
+          <th>Com Quem Está</th>
+          <th>Data de Empréstimo</th>
+          <th>Estado Físico</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela-inventario">
+        <tr>
+          <td colspan="8">Carregando instrumentos...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal para Cadastro/Edição de Instrumento -->
+<div id="modal-instrumento" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close" title="Fechar">&times;</button>
+    <h3 id="modal-titulo">Cadastrar Novo Instrumento</h3>
+    
+    <form id="form-instrumento">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="numero-instrumento">Número do Instrumento:</label>
+          <input type="text" id="numero-instrumento" placeholder="Ex: 001, INS-001" required>
+        </div>
+        <div class="form-group">
+          <label for="nome-instrumento">Nome do Instrumento:</label>
+          <input type="text" id="nome-instrumento" placeholder="Ex: Clarinete Bb, Violão Clássico" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tipo-instrumento">Tipo:</label>
+          <select id="tipo-instrumento" required>
+            <option value="">Selecione o tipo</option>
+            <option value="Sopro">Sopro</option>
+            <option value="Corda">Corda</option>
+            <option value="Percussão">Percussão</option>
+            <option value="Teclado">Teclado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="estado-fisico-instrumento">Estado Físico:</label>
+          <select id="estado-fisico-instrumento" required>
+            <option value="">Selecione o estado</option>
+            <option value="Excelente">Excelente</option>
+            <option value="Bom">Bom</option>
+            <option value="Regular">Regular</option>
+            <option value="Precisa Reparo">Precisa Reparo</option>
+            <option value="Fora de Uso">Fora de Uso</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="status-custodia-instrumento">Status de Custódia:</label>
+          <select id="status-custodia-instrumento" required>
+            <option value="">Selecione o status</option>
+            <option value="Disponível">Disponível</option>
+            <option value="Emprestado">Emprestado</option>
+            <option value="Em Manutenção">Em Manutenção</option>
+            <option value="Fora de Uso">Fora de Uso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="responsavel-instrumento">Com Quem Está (se emprestado):</label>
+          <input type="text" id="responsavel-instrumento" placeholder="Nome do aluno ou professor">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="data-emprestimo">Data de Empréstimo:</label>
+          <input type="date" id="data-emprestimo">
+        </div>
+        <div class="form-group">
+          <label for="data-devolucao-prevista">Data Prevista de Devolução:</label>
+          <input type="date" id="data-devolucao-prevista">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="marca-instrumento">Marca (Opcional):</label>
+          <input type="text" id="marca-instrumento" placeholder="Ex: Yamaha, Fender">
+        </div>
+        <div class="form-group">
+          <label for="localizacao-instrumento">Localização Física:</label>
+          <select id="localizacao-instrumento">
+            <option value="">Selecione a localização</option>
+            <option value="Sala de Aula 1">Sala de Aula 1</option>
+            <option value="Sala de Aula 2">Sala de Aula 2</option>
+            <option value="Sala de Aula 3">Sala de Aula 3</option>
+            <option value="Depósito">Depósito</option>
+            <option value="Secretaria">Secretaria</option>
+            <option value="Com Aluno">Com Aluno</option>
+            <option value="Com Professor">Com Professor</option>
+            <option value="Manutenção">Manutenção</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="observacoes-instrumento">Observações:</label>
+        <textarea id="observacoes-instrumento" rows="3" placeholder="Informações adicionais sobre o instrumento..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" id="btn-cancelar-instrumento" class="btn-secundario">Cancelar</button>
+        <button type="submit" id="btn-salvar-instrumento" class="btn-acao">Salvar Instrumento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast de Notificação -->
+<div id="toast-inventario" class="toast-notification hidden">
+  <span id="toast-mensagem">Instrumento salvo com sucesso!</span>
+</div>
+
+
+
+<!-- Modal para Gestão de Custódia -->
+<div id="modal-custodia" class="modal-overlay">
+  <div class="modal-content">
+    <button class="modal-close" title="Fechar">&times;</button>
+    <h3 id="modal-custodia-titulo">Gerenciar Custódia</h3>
+    <p id="modal-custodia-instrumento" style="margin-bottom: 20px; font-weight: 600; color: #F26729;"></p>
+    
+    <form id="form-custodia">
+      <input type="hidden" id="custodia-instrumento-id">
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="custodia-acao">Ação:</label>
+          <select id="custodia-acao" required>
+            <option value="">Selecione a ação</option>
+            <option value="emprestar">Emprestar Instrumento</option>
+            <option value="devolver">Devolver Instrumento</option>
+            <option value="manutencao">Enviar para Manutenção</option>
+            <option value="disponibilizar">Marcar como Disponível</option>
+          </select>
+        </div>
+        <div class="form-group" id="grupo-responsavel">
+          <label for="custodia-responsavel">Responsável:</label>
+          <input type="text" id="custodia-responsavel" placeholder="Nome do aluno ou professor">
+        </div>
+      </div>
+
+      <div class="form-row" id="grupo-datas">
+        <div class="form-group">
+          <label for="custodia-data-emprestimo">Data de Empréstimo:</label>
+          <input type="date" id="custodia-data-emprestimo">
+        </div>
+        <div class="form-group">
+          <label for="custodia-data-devolucao">Data Prevista de Devolução:</label>
+          <input type="date" id="custodia-data-devolucao">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="custodia-observacoes">Observações:</label>
+        <textarea id="custodia-observacoes" rows="3" placeholder="Observações sobre o empréstimo/devolução..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" id="btn-cancelar-custodia" class="btn-secundario">Cancelar</button>
+        <button type="submit" id="btn-salvar-custodia" class="btn-acao">Confirmar Ação</button>
+      </div>
+    </form>
+  </div>
+</div>
+

@@ -1,0 +1,50 @@
+<!-- frequencia_adm.html -->
+<div class="admin-gerenciador-container">
+  <div class="header-turmas">
+    <h2>Gerenciador de Frequências</h2>
+    <button id="btn-imprimir-frequencias" class="btn-acao">
+      <i class="fas fa-print"></i> Imprimir Relatório
+    </button>
+  </div>
+
+  <!-- Seção de Filtros -->
+  <div class="filtros-container">
+    <div class="filtro-item">
+      <label for="filtro-frequencia-data">Filtrar por Data:</label>
+      <input type="date" id="filtro-frequencia-data">
+    </div>
+    <div class="filtro-item">
+      <label for="filtro-frequencia-oficina">Filtrar por Oficina:</label>
+      <select id="filtro-frequencia-oficina">
+        <option value="">Todas</option>
+        <!-- Opções carregadas pelo JS -->
+      </select>
+    </div>
+    <div class="filtro-item">
+      <label for="filtro-frequencia-professor">Pesquisar por Professor:</label>
+      <input type="text" id="filtro-frequencia-professor" placeholder="Digite o nome do professor...">
+    </div>
+  </div>
+
+  <!-- Tabela para listar as frequências -->
+  <div class="tabela-wrapper">
+    <table id="tabela-frequencias-admin">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Oficina</th>
+          <th>Professor</th>
+          <th>Presentes</th>
+          <th>Faltas</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="corpo-tabela-frequencias-admin">
+        <!-- Linhas da tabela serão inseridas aqui pelo JavaScript -->
+        <tr>
+          <td colspan="6" style="text-align: center;">Carregando frequências...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

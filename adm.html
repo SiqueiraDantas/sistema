@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel do Administrador - MIS Educa</title>
+  <link rel="stylesheet" href="css/professor.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Barra Lateral de Navegação -->
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="assets/logo-mis.png" alt="Logo MIS Educa" class="logo-img" />
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+          <li><a href="#" data-page="plano_de_aula"><i class="fas fa-book-open"></i> Planos de Aula</a></li>
+          <li><a href="#" data-page="frequencia"><i class="fas fa-user-check"></i> Frequências</a></li>
+          <li><a href="#" data-page="turmas"><i class="fas fa-users"></i> Turmas</a></li>
+          <li><a href="#" data-page="relatorio"><i class="fas fa-file-alt"></i> Relatórios</a></li>
+          <li><a href="#" data-page="kpi"><i class="fas fa-chart-line"></i> KPIs</a></li>
+          <li><a href="#" data-page="inventario"><i class="fas fa-guitar"></i> Inventário</a></li>
+          <li><a href="#" id="logout" class="logout"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="content">
+      <header class="topbar">
+        <div class="welcome">
+          <h1>Painel do Administrador</h1>
+        </div>
+        <div class="profile">
+          <i class="fas fa-bell"></i>
+          <img src="assets/avatar.jpg" alt="Foto do Administrador" class="avatar" />
+        </div>
+      </header>
+      <section id="main-content">
+        <!-- Conteúdo dinâmico carregado aqui -->
+      </section>
+    </main>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- MODAIS GLOBAIS (Acessíveis por qualquer script carregado  ) -->
+  <!-- ================================================================== -->
+
+  <!-- Modal para Visualizar Detalhes do Plano de Aula -->
+  <div id="modal-visualizar-plano" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modal-visualizar-plano-fechar" class="modal-close" title="Fechar">&times;</button>
+      <h3 id="modal-plano-titulo">Detalhes do Plano de Aula</h3>
+      <div id="modal-plano-conteudo">
+        <!-- Conteúdo detalhado inserido pelo JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Editar Plano de Aula -->
+  <div id="modal-editar-plano" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modal-editar-plano-fechar" class="modal-close" title="Fechar">&times;</button>
+      <h3>Editar Plano de Aula</h3>
+      <form id="form-editar-plano">
+        <input type="hidden" id="editar-plano-id">
+        <div class="form-grid">
+          <div class="form-column">
+            <label for="editar-plano-titulo">Título da Aula:</label>
+            <input type="text" id="editar-plano-titulo" name="editar-plano-titulo" required>
+            <label for="editar-plano-oficina">Oficina/Turma:</label>
+            <select id="editar-plano-oficina" name="editar-plano-oficina" required></select>
+            <label for="editar-plano-professor">Nome do Professor:</label>
+            <input type="text" id="editar-plano-professor" name="editar-plano-professor" required>
+            <label for="editar-plano-data">Data da Aula:</label>
+            <input type="date" id="editar-plano-data" name="editar-plano-data" required>
+          </div>
+          <div class="form-column">
+            <label for="editar-plano-objetivos">Objetivos da Aula:</label>
+            <textarea id="editar-plano-objetivos" name="editar-plano-objetivos" rows="4" required></textarea>
+          </div>
+        </div>
+        <label for="editar-plano-materiais">Materiais Necessários:</label>
+        <textarea id="editar-plano-materiais" name="editar-plano-materiais" rows="3"></textarea>
+        <label for="editar-plano-descricao">Descrição da Atividade:</label>
+        <textarea id="editar-plano-descricao" name="editar-plano-descricao" rows="6" required></textarea>
+        <label for="editar-plano-avaliacao">Método de Avaliação:</label>
+        <textarea id="editar-plano-avaliacao" name="editar-plano-avaliacao" rows="3" required></textarea>
+        <button type="submit" id="btn-salvar-edicao" class="btn-acao">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- NOVO MODAL ADICIONADO -->
+  <!-- ================================================================== -->
+  
+  <!-- Modal para Visualizar Detalhes da Frequência -->
+  <div id="modal-visualizar-frequencia" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modal-frequencia-fechar" class="modal-close" title="Fechar">&times;</button>
+      <h3 id="modal-frequencia-titulo">Detalhes da Frequência</h3>
+      <p id="modal-frequencia-subtitulo" style="margin-top:-15px; margin-bottom: 20px; font-weight: 600; color: #555;"></p>
+      <div id="modal-frequencia-conteudo">
+        <!-- A lista de alunos será inserida aqui pelo JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Script principal que controla o painel de admin -->
+  <script type="module" src="js/adm.js"></script>
+</body>
+</html>

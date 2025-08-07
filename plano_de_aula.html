@@ -1,0 +1,67 @@
+<!-- plano_de_aula.html (VERSÃO CORRIGIDA E ATUALIZADA) -->
+<div class="plano-de-aula-container">
+
+  <!-- Seção do Formulário para Criar um Novo Plano -->
+  <div class="form-card">
+    <h2>Criar Novo Plano de Aula</h2>
+    
+    <!-- 
+      O formulário agora tem:
+      1. O id 'plano-form' para o JavaScript encontrá-lo.
+      2. O atributo 'name' em cada campo para o FormData funcionar.
+      3. O atributo 'required' para validação básica nos campos obrigatórios.
+    -->
+    <form id="plano-form"> 
+
+      <div class="form-grid">
+        <!-- Coluna 1 -->
+        <div class="form-column">
+          <label for="plano-titulo">Título da Aula:</label>
+          <input type="text" id="plano-titulo" name="plano-titulo" placeholder="Ex: Introdução aos Acordes Maiores" required>
+
+          <label for="plano-oficina">Oficina/Turma:</label>
+          <select id="plano-oficina" name="plano-oficina" required>
+            <option value="">Carregando oficinas...</option>
+          </select>
+
+          <label for="plano-professor">Nome do Professor:</label>
+          <!-- CORREÇÃO: Atributo 'readonly' foi REMOVIDO para permitir a digitação -->
+          <input type="text" id="plano-professor" name="plano-professor" placeholder="Digite seu nome completo" required>
+
+          <label for="plano-data">Data da Aula:</label>
+          <input type="date" id="plano-data" name="plano-data" required>
+        </div>
+        
+        <!-- Coluna 2 -->
+        <div class="form-column">
+          <label for="plano-objetivos">Objetivos da Aula:</label>
+          <textarea id="plano-objetivos" name="plano-objetivos" rows="4" placeholder="O que os alunos devem ser capazes de fazer ao final da aula?" required></textarea>
+        </div>
+      </div>
+
+      <label for="plano-materiais">Materiais Necessários:</label>
+      <!-- Este campo não é obrigatório (required) -->
+      <textarea id="plano-materiais" name="plano-materiais" rows="3" placeholder="Liste os instrumentos, partituras, equipamentos, etc."></textarea>
+
+      <label for="plano-descricao">Descrição da Atividade (Passo a Passo):</label>
+      <textarea id="plano-descricao" name="plano-descricao" rows="6" placeholder="Descreva o desenvolvimento da aula, do início ao fim." required></textarea>
+
+      <label for="plano-avaliacao">Método de Avaliação:</label>
+      <textarea id="plano-avaliacao" name="plano-avaliacao" rows="3" placeholder="Como o progresso dos alunos será avaliado?" required></textarea>
+
+      <!-- O botão agora é do tipo 'submit', que é a prática correta para formulários -->
+      <button type="submit" id="btn-salvar-plano">Salvar Plano de Aula</button>
+
+    </form> 
+  </div>
+
+  <!-- Seção para Listar os Planos Salvos (se aplicável na visão do professor) -->
+  <div class="lista-planos-container">
+    <h2>Planos de Aula Salvos</h2>
+    <div id="lista-planos-salvos" class="cards-list">
+      <!-- O JavaScript poderá inserir os planos salvos aqui, se necessário no futuro -->
+      <p>A lista de planos salvos é gerenciada no painel do administrador.</p>
+    </div>
+  </div>
+
+</div>

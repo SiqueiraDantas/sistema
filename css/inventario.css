@@ -1,0 +1,543 @@
+/* CSS específico para o Sistema de Inventário */
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f4f7f6;
+  color: #333;
+}
+
+.inventario-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-inventario {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.header-inventario h2 {
+  color: #333;
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.filtros-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.filtro-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-item label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.filtro-item select,
+.filtro-item input {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.filtro-item select:focus,
+.filtro-item input:focus {
+  outline: none;
+  border-color: #F26729;
+  box-shadow: 0 0 0 2px rgba(242, 103, 41, 0.2);
+}
+
+.tabela-wrapper {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+#tabela-inventario {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#tabela-inventario thead {
+  background: linear-gradient(135deg, #F26729, #e55a1f);
+  color: white;
+}
+
+#tabela-inventario th {
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#tabela-inventario tbody tr {
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+#tabela-inventario tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+#tabela-inventario td {
+  padding: 12px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.badge-estado {
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-acao-tabela {
+  background: none;
+  border: none;
+  padding: 6px 8px;
+  margin: 0 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6c757d;
+}
+
+.btn-acao-tabela:hover {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.btn-acao-tabela.btn-excluir:hover {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 5px;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+#modal-titulo {
+  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  padding-right: 40px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #F26729;
+  box-shadow: 0 0 0 2px rgba(242, 103, 41, 0.2);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Ajuste para campos de data */
+.form-group input[type="date"] {
+  min-width: 150px;
+}
+
+/* Força o último form-group a ocupar a largura total se for ímpar em um form-row */
+.form-row:last-of-type .form-group:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-secundario {
+  padding: 12px 24px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.btn-secundario:hover {
+  background-color: #5a6268;
+}
+
+.btn-acao {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #F26729, #e55a1f);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-acao:hover {
+  background: linear-gradient(135deg, #e55a1f, #d94d17);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(242, 103, 41, 0.3);
+}
+
+.btn-acao:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.toast-notification.hidden {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-notification.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .inventario-container {
+    padding: 15px;
+  }
+  
+  .header-inventario {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .filtros-container {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .modal-content {
+    padding: 20px;
+    margin: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  #tabela-inventario {
+    font-size: 12px;
+  }
+  
+  #tabela-inventario th,
+  #tabela-inventario td {
+    padding: 8px 6px;
+  }
+}
+
+
+/* Estilos específicos para Gestão de Custódia */
+
+.badge-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.linha-atrasada {
+  background-color: #ffebee !important;
+  border-left: 4px solid #f44336;
+}
+
+.linha-atrasada:hover {
+  background-color: #ffcdd2 !important;
+}
+
+/* Modal de Custódia */
+#modal-custodia .modal-content {
+  max-width: 500px;
+}
+
+#modal-custodia-instrumento {
+  background: linear-gradient(135deg, #F26729, #e55a1f);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+#grupo-responsavel,
+#grupo-datas {
+  display: none;
+}
+
+#grupo-datas.flex {
+  display: flex;
+}
+
+/* Botão de Custódia */
+.btn-acao-tabela[title="Gerenciar Custódia"] {
+  color: #F26729;
+}
+
+.btn-acao-tabela[title="Gerenciar Custódia"]:hover {
+  background-color: #fff3e0;
+  color: #e55a1f;
+}
+
+/* Estados visuais para badges */
+.badge-status[style*="#4CAF50"] {
+  /* Disponível - Verde */
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+}
+
+.badge-status[style*="#FF9800"] {
+  /* Emprestado - Laranja */
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+  animation: pulse-orange 2s infinite;
+}
+
+.badge-status[style*="#2196F3"] {
+  /* Em Manutenção - Azul */
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.badge-status[style*="#9E9E9E"] {
+  /* Fora de Uso - Cinza */
+  box-shadow: 0 2px 4px rgba(158, 158, 158, 0.3);
+}
+
+@keyframes pulse-orange {
+  0% {
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.6);
+  }
+  100% {
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+  }
+}
+
+/* Indicadores visuais para instrumentos em atraso */
+.linha-atrasada .badge-status {
+  position: relative;
+}
+
+.linha-atrasada .badge-status::after {
+  content: "⚠️";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  font-size: 10px;
+}
+
+/* Melhorias no formulário de custódia */
+#form-custodia .form-group label {
+  font-weight: 600;
+  color: #333;
+}
+
+#form-custodia select,
+#form-custodia input,
+#form-custodia textarea {
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+#form-custodia select:focus,
+#form-custodia input:focus,
+#form-custodia textarea:focus {
+  border-color: #F26729;
+  box-shadow: 0 0 0 3px rgba(242, 103, 41, 0.1);
+}
+
+/* Responsividade para tabela de custódia */
+@media (max-width: 768px) {
+  #tabela-inventario th:nth-child(6),
+  #tabela-inventario td:nth-child(6) {
+    display: none;
+  }
+  
+  #tabela-inventario th:nth-child(7),
+  #tabela-inventario td:nth-child(7) {
+    display: none;
+  }
+  
+  .badge-status,
+  .badge-estado {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+/* Melhorias visuais para o modal de custódia */
+#modal-custodia .form-actions {
+  background: #f8f9fa;
+  margin: 20px -30px -30px -30px;
+  padding: 20px 30px;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Destaque para campos obrigatórios */
+.form-group input[required],
+.form-group select[required] {
+  border-left: 3px solid #F26729;
+}
+
+/* Animação suave para mostrar/esconder campos */
+.form-group {
+  transition: all 0.3s ease;
+}
+
+.form-group[style*="display: none"] {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.form-group[style*="display: block"],
+.form-group[style*="display: flex"] {
+  opacity: 1;
+  transform: translateY(0);
+}

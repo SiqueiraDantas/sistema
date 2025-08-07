@@ -1,0 +1,139 @@
+<!-- Relatório Mensal Consolidado COM FILTRO DE DISTRITO -->
+<div class="relatorio-container">
+  <div class="header-relatorio">
+    <h2><i class="fas fa-chart-bar"></i> Relatório Mensal Consolidado</h2>
+    <div class="status-relatorio">
+      <span id="status-carregamento">Pronto para gerar relatório</span>
+    </div>
+  </div>
+
+  <!-- Filtros de Seleção -->
+  <div class="filtros-relatorio">
+    <div class="filtro-grupo">
+      <label for="mes-relatorio">Mês:</label>
+      <select id="mes-relatorio">
+        <option value="1">Janeiro</option>
+        <option value="2">Fevereiro</option>
+        <option value="3">Março</option>
+        <option value="4">Abril</option>
+        <option value="5">Maio</option>
+        <option value="6">Junho</option>
+        <option value="7">Julho</option>
+        <option value="8" selected>Agosto</option>
+        <option value="9">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
+    </div>
+
+    <div class="filtro-grupo">
+      <label for="ano-relatorio">Ano:</label>
+      <select id="ano-relatorio">
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+        <option value="2025" selected>2025</option>
+      </select>
+    </div>
+
+    <div class="filtro-grupo">
+      <label for="oficina-relatorio">Oficina/Turma:</label>
+      <select id="oficina-relatorio">
+        <option value="">Carregando oficinas...</option>
+      </select>
+    </div>
+
+    <!-- NOVO: Filtro de Distrito para Percussão/Fanfarra -->
+    <div class="filtro-grupo" id="filtro-distrito-relatorio" style="display: none;">
+      <label for="distrito-relatorio">Distrito/Turma:</label>
+      <select id="distrito-relatorio">
+        <option value="">Selecione um distrito</option>
+        <option value="Sede">Sede (Todos os bairros da sede)</option>
+        <option value="Macaoca">Macaoca</option>
+        <option value="Cajazeiras">Cajazeiras</option>
+        <option value="União">União</option>
+        <option value="Cacimba Nova">Cacimba Nova</option>
+        <option value="Paus Branco">Paus Branco</option>
+      </select>
+    </div>
+
+    <div class="filtro-grupo">
+      <button id="btn-gerar-relatorio" class="btn-gerar">
+        <i class="fas fa-chart-line"></i> Gerar Relatório
+      </button>
+    </div>
+  </div>
+
+  <!-- Área de Resultados -->
+  <div id="area-resultados" class="area-resultados">
+    
+    <!-- Resumo da Turma -->
+    <div class="card-relatorio">
+      <h3><i class="fas fa-users"></i> Resumo da Turma</h3>
+      <div class="resumo-stats">
+        <div class="stat-item">
+          <span class="stat-numero" id="total-alunos">-</span>
+          <span class="stat-label">Total de Alunos</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-numero" id="total-aulas">-</span>
+          <span class="stat-label">Aulas Ministradas</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-numero" id="frequencia-media">-</span>
+          <span class="stat-label">Frequência Média</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalhes de Frequência Individual -->
+    <div class="card-relatorio">
+      <h3><i class="fas fa-user-check"></i> Detalhes de Frequência Individual</h3>
+      <div class="tabela-wrapper">
+        <table id="tabela-frequencia-individual">
+          <thead>
+            <tr>
+              <th>Nome do Aluno</th>
+              <th>Presenças</th>
+              <th>Faltas</th>
+              <th>Frequência (%)</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-frequencia">
+            <tr>
+              <td colspan="4" class="sem-dados">Nenhum registro de frequência encontrado para este período.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Aulas Ministradas no Período -->
+    <div class="card-relatorio">
+      <h3><i class="fas fa-chalkboard-teacher"></i> Aulas Ministradas no Período</h3>
+      <div id="lista-aulas" class="lista-aulas">
+        <p class="sem-dados">Nenhum plano de aula registrado para esta oficina no período.</p>
+      </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="acoes-relatorio">
+      <button id="btn-exportar-pdf" class="btn-acao btn-pdf" disabled>
+        <i class="fas fa-file-pdf"></i> Exportar PDF
+      </button>
+      <button id="btn-exportar-excel" class="btn-acao btn-excel" disabled>
+        <i class="fas fa-file-excel"></i> Exportar Excel
+      </button>
+      <button id="btn-imprimir" class="btn-acao btn-imprimir" disabled>
+        <i class="fas fa-print"></i> Imprimir
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast para notificações -->
+<div id="toast-relatorio" class="toast-notification hidden">
+  <span id="toast-mensagem-relatorio"></span>
+</div>
+

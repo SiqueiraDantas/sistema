@@ -1,0 +1,132 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f9f9f9;
+  margin: 0;
+  padding: 30px;
+}
+
+.frequencia-container {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 900px;
+  margin: auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+  color: #F26729;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+}
+
+select, input[type="date"] {
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  min-width: 200px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  padding: 12px;
+  border: 1px solid #ccc;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  background-color: #1B4B5F;
+  color: white;
+}
+
+button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background-color: #F26729;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover:not(.btn-presenca):not(.btn-falta):not(.btn-justificar) {
+  background-color: #d55a1f;
+}
+
+#toast {
+  margin-top: 20px;
+  padding: 10px;
+  background: #1B4B5F;
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+}
+
+.modal-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+button.btn-presenca,
+button.btn-falta,
+button.btn-justificar {
+  margin: 2px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #eee;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+button.ativo {
+  background-color: #f26729;
+  color: white;
+}
