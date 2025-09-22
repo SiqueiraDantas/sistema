@@ -1,18 +1,11 @@
-<!-- plano_de_aula.html (VERSÃO CORRIGIDA E ATUALIZADA) -->
+<!-- plano_de_aula.html (PROFESSOR — criar + gerenciar próprios planos) -->
 <div class="plano-de-aula-container">
 
   <!-- Seção do Formulário para Criar um Novo Plano -->
   <div class="form-card">
     <h2>Criar Novo Plano de Aula</h2>
-    
-    <!-- 
-      O formulário agora tem:
-      1. O id 'plano-form' para o JavaScript encontrá-lo.
-      2. O atributo 'name' em cada campo para o FormData funcionar.
-      3. O atributo 'required' para validação básica nos campos obrigatórios.
-    -->
-    <form id="plano-form"> 
 
+    <form id="plano-form">
       <div class="form-grid">
         <!-- Coluna 1 -->
         <div class="form-column">
@@ -25,13 +18,12 @@
           </select>
 
           <label for="plano-professor">Nome do Professor:</label>
-          <!-- CORREÇÃO: Atributo 'readonly' foi REMOVIDO para permitir a digitação -->
           <input type="text" id="plano-professor" name="plano-professor" placeholder="Digite seu nome completo" required>
 
           <label for="plano-data">Data da Aula:</label>
           <input type="date" id="plano-data" name="plano-data" required>
         </div>
-        
+
         <!-- Coluna 2 -->
         <div class="form-column">
           <label for="plano-objetivos">Objetivos da Aula:</label>
@@ -40,7 +32,6 @@
       </div>
 
       <label for="plano-materiais">Materiais Necessários:</label>
-      <!-- Este campo não é obrigatório (required) -->
       <textarea id="plano-materiais" name="plano-materiais" rows="3" placeholder="Liste os instrumentos, partituras, equipamentos, etc."></textarea>
 
       <label for="plano-descricao">Descrição da Atividade (Passo a Passo):</label>
@@ -49,19 +40,107 @@
       <label for="plano-avaliacao">Método de Avaliação:</label>
       <textarea id="plano-avaliacao" name="plano-avaliacao" rows="3" placeholder="Como o progresso dos alunos será avaliado?" required></textarea>
 
-      <!-- O botão agora é do tipo 'submit', que é a prática correta para formulários -->
       <button type="submit" id="btn-salvar-plano">Salvar Plano de Aula</button>
-
-    </form> 
+    </form>
   </div>
 
-  <!-- Seção para Listar os Planos Salvos (se aplicável na visão do professor) -->
-  <div class="lista-planos-container">
-    <h2>Planos de Aula Salvos</h2>
-    <div id="lista-planos-salvos" class="cards-list">
-      <!-- O JavaScript poderá inserir os planos salvos aqui, se necessário no futuro -->
-      <p>A lista de planos salvos é gerenciada no painel do administrador.</p>
+  <!-- Gerenciar meus planos (mesmo padrão do admin, mas só do professor) -->
+  <div class="admin-gerenciador-container">
+    <div class="header-turmas">
+      <h2>Meus Planos de Aula</h2>
+      <button id="btn-imprimir-planos" class="btn-acao">
+        <i class="fas fa-print"></i> Imprimir Lista
+      </button>
+    </div>
+
+    <div class="filtros-container">
+      <div class="filtro-item">
+        <label for="filtro-planos-oficina">Filtrar por Oficina:</label>
+        <select id="filtro-planos-oficina">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtro-planos-busca">Buscar por Título/Objetivo:</label>
+        <input type="text" id="filtro-planos-busca" placeholder="Digite aqui...">
+      </div>
+    </div>
+
+    <div class="tabela-wrapper">
+      <table id="tabela-planos-admin">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Título da Aula</th>
+            <th>Oficina</th>
+            <th>Professor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela-planos-admin"></tbody>
+      </table>
     </div>
   </div>
+</div>
 
+<!-- Modal Visualizar -->
+<div id="modal-visualizar-plano" class="modal" style="display:none;">
+  <div class="modal-backdrop" data-fechar></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-plano-titulo">Plano de Aula</h3>
+      <button id="modal-visualizar-plano-fechar" class="modal-close" title="Fechar">×</button>
+    </div>
+    <div id="modal-plano-conteudo"></div>
+  </div>
+</div>
+
+<!-- Modal Editar -->
+<div id="modal-editar-plano" class="modal" style="display:none;">
+  <div class="modal-backdrop" data-fechar></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Editar Plano de Aula</h3>
+      <button id="modal-editar-plano-fechar" class="modal-close" title="Fechar">×</button>
+    </div>
+    <form id="form-editar-plano">
+      <input type="hidden" id="editar-plano-id">
+
+      <label for="editar-plano-titulo">Título</label>
+      <input type="text" id="editar-plano-titulo" required>
+
+      <div class="grid">
+        <div>
+          <label for="editar-plano-oficina">Oficina</label>
+          <select id="editar-plano-oficina" required>
+            <option value="">Selecione</option>
+          </select>
+        </div>
+        <div>
+          <label for="editar-plano-professor">Professor</label>
+          <input type="text" id="editar-plano-professor" required>
+        </div>
+      </div>
+
+      <label for="editar-plano-data">Data</label>
+      <input type="date" id="editar-plano-data" required>
+
+      <label for="editar-plano-objetivos">Objetivos</label>
+      <textarea id="editar-plano-objetivos" rows="3" required></textarea>
+
+      <label for="editar-plano-materiais">Materiais</label>
+      <textarea id="editar-plano-materiais" rows="3"></textarea>
+
+      <label for="editar-plano-descricao">Descrição / Passo a Passo</label>
+      <textarea id="editar-plano-descricao" rows="6" required></textarea>
+
+      <label for="editar-plano-avaliacao">Avaliação</label>
+      <textarea id="editar-plano-avaliacao" rows="3" required></textarea>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secundario" id="modal-editar-plano-fechar-2">Fechar</button>
+        <button type="submit" id="btn-salvar-edicao" class="btn-primario">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
 </div>
