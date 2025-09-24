@@ -1,258 +1,158 @@
-<div class="admin-gerenciador-container">
-  <h2>Análise de KPIs de Matrículas</h2>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MIS Educa — KPIs</title>
 
-  <div class="kpi-dashboard">
-    <!-- Gráfico de Distribuição por Bairro -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Bairro</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-bairro" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;400;600;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+  <style>
+    :root{
+      --cor-primaria:#F26729;
+      --cor-primaria-rgb:242,103,41;
+      --cor-azul:#1B4B5F;
+      --cor-cinza:#FAFAFA;
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; padding:24px; font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f5f6f8; color:#1a1a1a; }
+    h2{ margin:0 0 12px; color:var(--cor-azul); font-weight:800; }
+    .admin-gerenciador-container{ max-width:1200px; margin:0 auto; }
+
+    .kpi-toolbar{
+      background:#fff; border-radius:10px; padding:16px;
+      display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center;
+      box-shadow:0 4px 8px rgba(0,0,0,.08);
+    }
+    .kpi-toolbar .left{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    label{ font-size:.95rem; color:#333; }
+    select, button{ font:inherit; padding:10px 12px; border-radius:8px; border:1px solid #ddd; background:#fff; }
+    button.primary{ background:var(--cor-primaria); color:#fff; border-color:transparent; cursor:pointer; }
+    button.ghost{ background:#fff; color:var(--cor-primaria); border:1px solid var(--cor-primaria); cursor:pointer; }
+    .scope-badge{ justify-self:end; background:rgba(var(--cor-primaria-rgb), .08); color:var(--cor-primaria); padding:8px 12px; border-radius:999px; font-size:.9rem; }
+
+    .kpi-dashboard { display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:30px; margin-top:20px; }
+    .kpi-card { background:#fff; padding:25px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,.10); display:flex; flex-direction:column; min-height:360px; }
+    .kpi-card.full-width{ grid-column:1 / -1; }
+    .kpi-card-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+    .kpi-card h3{ margin:0; color:#333; font-size:1.15rem; }
+
+    .print-kpi-chart{ background:none; border:none; color:var(--cor-primaria); font-size:1.1em; cursor:pointer; padding:5px; border-radius:6px; transition: background-color .2s; }
+    .print-kpi-chart:hover{ background-color: rgba(var(--cor-primaria-rgb), 0.1); }
+
+    .chart-container{ height:300px; width:100%; display:flex; align-items:center; justify-content:center; color:#888; font-style:italic; position:relative; }
+    .chart-pie-svg{ max-width:100%; max-height:100%; }
+    .chart-pie-slice{ stroke:#fff; stroke-width:2px; transition:opacity .2s; }
+    .chart-pie-slice:hover{ opacity:.85; }
+    .chart-pie-label{ font-size:.75em; fill:#333; text-anchor:middle; pointer-events:none; }
+    .chart-legend{ margin-top:16px; font-size:.92em; max-height:150px; overflow:auto; padding-right:8px; }
+    .chart-legend-item{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .chart-legend-color-box{ width:14px; height:14px; border-radius:3px; flex-shrink:0; }
+  </style>
+</head>
+<body>
+  <div class="admin-gerenciador-container">
+    <h2>Análise de KPIs de Matrículas</h2>
+
+    <!-- Toolbar / Filtro por Oficina -->
+    <div class="kpi-toolbar">
+      <div class="left">
+        <label for="filtro-oficina">Filtrar por Oficina:</label>
+        <select id="filtro-oficina" aria-label="Filtro por oficina">
+          <option value="todas">Todas as Oficinas</option>
+        </select>
+        <button id="aplicar-filtro" class="primary"><i class="fa-solid fa-filter"></i> Aplicar</button>
+        <button id="limpar-filtro" class="ghost"><i class="fa-solid fa-rotate"></i> Todas</button>
       </div>
-      <div id="chart-bairro" class="chart-container"></div>
+      <div id="escopo-atual" class="scope-badge">Escopo: Todas as Oficinas</div>
     </div>
 
-    <!-- Gráfico de Distribuição por Escola -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Escola</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-escola" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+    <div class="kpi-dashboard">
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Bairro</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-bairro" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-bairro" class="chart-container"></div>
       </div>
-      <div id="chart-escola" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Distribuição por Idade -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Idade</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-idade" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Escola</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-escola" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-escola" class="chart-container"></div>
       </div>
-      <div id="chart-idade" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Distribuição por Raça -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Raça</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-raca" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Idade</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-idade" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-idade" class="chart-container"></div>
       </div>
-      <div id="chart-raca" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Distribuição por Rede de Ensino -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Rede de Ensino</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-rede" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Raça</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-raca" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-raca" class="chart-container"></div>
       </div>
-      <div id="chart-rede" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Distribuição por Religião -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Religião</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-religiao" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Rede de Ensino</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-rede" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-rede" class="chart-container"></div>
       </div>
-      <div id="chart-religiao" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Distribuição por Oficina -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Oficina</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-oficina" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Religião</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-religiao" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-religiao" class="chart-container"></div>
       </div>
-      <div id="chart-oficina" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Distribuição por Programa Social -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Alunos por Programa Social</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-programas" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Oficina</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-oficina" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-oficina" class="chart-container"></div>
       </div>
-      <div id="chart-programas" class="chart-container"></div>
-    </div>
 
-    <!-- Gráfico de Gênero do Aluno -->
-    <div class="kpi-card">
-      <div class="kpi-card-header">
-        <h3>Gênero do Aluno</h3>
-        <button class="print-kpi-chart" data-chart-id="chart-sexo-aluno" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Alunos por Programa Social</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-programas" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-programas" class="chart-container"></div>
       </div>
-      <div id="chart-sexo-aluno" class="chart-container"></div>
-    </div>
 
-    <!-- Métricas Gerais -->
-    <div class="kpi-card full-width">
-      <h3>Métricas Gerais</h3>
-      <p>Total de Matrículas: <span id="total-matriculas">0</span></p>
-      <p>Matrículas em 2025: <span id="total-matriculas-2025">0</span></p>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <h3>Gênero do Aluno</h3>
+          <button class="print-kpi-chart" data-chart-id="chart-sexo-aluno" title="Imprimir este gráfico"><i class="fas fa-print"></i></button>
+        </div>
+        <div id="chart-sexo-aluno" class="chart-container"></div>
+      </div>
+
+      <div class="kpi-card full-width">
+        <h3>Métricas Gerais</h3>
+        <p>Total de Matrículas: <span id="total-matriculas">0</span></p>
+        <p>Matrículas em 2025: <span id="total-matriculas-2025">0</span></p>
+      </div>
     </div>
   </div>
-</div>
 
-<style>
-  .kpi-dashboard {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 30px;
-    margin-top: 30px;
-  }
-  .kpi-card {
-    background-color: #fff;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    display: flex;
-    flex-direction: column;
-  }
-  .kpi-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-  }
-  .kpi-card h3 {
-    margin: 0;
-    color: #333;
-    font-size: 1.3em;
-  }
-  .print-kpi-chart {
-    background: none;
-    border: none;
-    color: var(--cor-primaria);
-    font-size: 1.2em;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-  }
-  .print-kpi-chart:hover {
-    background-color: rgba(var(--cor-primaria-rgb), 0.1);
-  }
-  .chart-container {
-    height: 300px;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-    font-style: italic;
-    position: relative;
-  }
-  .full-width {
-    grid-column: 1 / -1;
-  }
-  /* Estilos para gráficos de barras */
-  .chart-bar-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    justify-content: flex-end;
-    padding-bottom: 10px;
-    width: 100%;
-  }
-  .chart-bar-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .chart-bar-label {
-    width: 120px;
-    font-size: 0.9em;
-    color: #555;
-    flex-shrink: 0;
-    text-align: right;
-    padding-right: 10px;
-  }
-  .chart-bar-value-container {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-  }
-  .chart-bar {
-    background-color: var(--cor-primaria);
-    color: white;
-    font-size: 0.8em;
-    text-align: right;
-    padding: 4px 8px;
-    box-sizing: border-box;
-    border-radius: 3px;
-    min-width: 20px;
-    transition: width 0.5s ease-out;
-  }
-  /* Estilos para gráficos de pizza */
-  .chart-pie-svg {
-    max-width: 100%;
-    max-height: 100%;
-  }
-  .chart-pie-slice {
-    stroke: white;
-    stroke-width: 2px;
-    transition: fill 0.3s ease;
-  }
-  .chart-pie-slice:hover {
-    opacity: 0.8;
-  }
-  .chart-pie-label {
-    font-size: 0.7em;
-    fill: #333;
-    text-anchor: middle;
-    pointer-events: none;
-  }
-  .chart-legend {
-    margin-top: 20px;
-    font-size: 0.9em;
-    max-height: 150px;
-    overflow-y: auto;
-    padding-right: 10px;
-  }
-  .chart-legend-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .chart-legend-color-box {
-    width: 15px;
-    height: 15px;
-    display: inline-block;
-    margin-right: 8px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-  /* Estilos para impressão */
-  @media print {
-    body * {
-      visibility: hidden;
-    }
-    .print-only-chart, .print-only-chart * {
-      visibility: visible;
-    }
-    .print-only-chart {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-    .print-only-chart .chart-container {
-      height: auto;
-      width: 90%;
-      max-width: 600px;
-    }
-    .print-only-chart .chart-legend {
-      max-height: none;
-      overflow-y: visible;
-    }
-    .print-kpi-chart {
-      display: none;
-    }
-  }
-</style>
+  <!-- Boot -->
+  <script type="module">
+    import { init } from './js/kpi.js';
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
