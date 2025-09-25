@@ -1,35 +1,139 @@
-<div class="admin-gerenciador-container">
-  <h2>Gerenciador de Turmas</h2>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel do Administrador — Gerenciador de Turmas</title>
 
-  <div class="filtros-container">
-    <div class="filtro-item">
-      <label for="filtro-oficina-turmas">Filtrar por Oficina:</label>
-      <select id="filtro-oficina-turmas">
-        <option value="">Todas</option>
-        <!-- Opções de oficina serão carregadas via JS -->
-      </select>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;400;600;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+  <!-- FIXES do modal: classes exclusivas + alta precedência -->
+  <style>
+    html, body { height: 100%; }
+
+    /* ======== MODAL (NOMES EXCLUSIVOS) ======== */
+    #modal-editar-oficinas-adm.mis-modal {
+      position: fixed !important;
+      inset: 0 !important;            /* top/right/bottom/left */
+      width: 100vw !important;
+      height: 100vh !important;
+      display: none !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(0,0,0,.6) !important;
+      z-index: 2147483647 !important; /* topo de tudo */
+      transform: none !important;
+      overflow: hidden !important;
+    }
+    #modal-editar-oficinas-adm.mis-modal.visible { display: flex !important; }
+
+    #modal-editar-oficinas-adm .mis-modal-content {
+      position: relative !important;
+      background: #fff !important;
+      width: min(520px, calc(100% - 32px)) !important;
+      margin: 0 !important;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      box-shadow: 0 20px 50px rgba(0,0,0,.3) !important;
+    }
+    #modal-editar-oficinas-adm .mis-modal-close {
+      position: absolute !important;
+      top: 8px !important;
+      right: 12px !important;
+      font-size: 22px !important;
+      cursor: pointer !important;
+      line-height: 1 !important;
+    }
+    #modal-editar-oficinas-adm h3 {
+      color: #F26729 !important;
+      margin: 0 0 12px 0 !important;
+      font-weight: 700 !important;
+    }
+    #adm-modal-select-oficinas[multiple] {
+      width: 100% !important;
+      height: 160px !important;
+      padding: 6px !important;
+      margin: 16px 0 !important;
+      font-size: 14px !important;
+      border: 1px solid #ccc !important;
+      border-radius: 6px !important;
+      outline: none !important;
+    }
+    .mis-btn-salvar {
+      background: #1B4B5F !important;
+      color: #fff !important;
+      padding: 10px 18px !important;
+      border: none !important;
+      border-radius: 6px !important;
+      font-size: 15px !important;
+      cursor: pointer !important;
+    }
+    .mis-btn-salvar:hover { background: #163a46 !important; }
+    .mis-modal-actions { display: flex !important; justify-content: flex-end !important; gap: 8px !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ========= CONTEÚDO ========= -->
+  <div class="admin-gerenciador-container">
+    <h2>Gerenciador de Turmas</h2>
+
+    <div class="filtros-container">
+      <div class="filtro-item">
+        <label for="filtro-oficina-turmas">Filtrar por Oficina:</label>
+        <select id="filtro-oficina-turmas">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtro-professor-turmas">Pesquisar por Professor:</label>
+        <input type="text" id="filtro-professor-turmas" placeholder="Digite o nome do professor...">
+      </div>
     </div>
-    <div class="filtro-item">
-      <label for="filtro-professor-turmas">Pesquisar por Professor:</label>
-      <input type="text" id="filtro-professor-turmas" placeholder="Digite o nome do professor...">
+
+    <div class="tabela-wrapper">
+      <table class="tabela-padrao">
+        <thead>
+          <tr>
+            <th>Nome do Aluno</th>
+            <th>Nome do Responsável</th>
+            <th>Telefone do Responsável</th>
+            <th>Oficina(s)</th>
+            <th>Professor(es)</th>
+            <th style="width:160px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela-turmas">
+          <tr><td colspan="6">Carregando turmas...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div class="tabela-wrapper">
-    <table class="tabela-padrao">
-      <thead>
-        <tr>
-          <th>Nome do Aluno</th>
-          <th>Nome do Responsável</th>
-          <th>Telefone do Responsável</th>
-          <th>Oficina(s)</th>
-          <th>Professor(es)</th>
-        </tr>
-      </thead>
-      <tbody id="corpo-tabela-turmas">
-        <!-- Dados da tabela serão inseridos aqui pelo JavaScript -->
-        <tr><td colspan="5">Carregando turmas...</td></tr>
-      </tbody>
-    </table>
+  <!-- ========= MODAL (direto no body) ========= -->
+  <div id="modal-editar-oficinas-adm" class="mis-modal">
+    <div class="mis-modal-content">
+      <span class="mis-modal-close" title="Fechar">&times;</span>
+      <h3>Editar Oficinas de <span id="adm-modal-nome-aluno"></span></h3>
+
+      <label for="adm-modal-select-oficinas">Selecione as oficinas:</label>
+      <select id="adm-modal-select-oficinas" multiple></select>
+
+      <div class="mis-modal-actions">
+        <button id="adm-modal-btn-salvar" class="mis-btn-salvar">
+          <i class="fas fa-save"></i> Salvar
+        </button>
+      </div>
+    </div>
   </div>
-</div>
+
+  <!-- exemplo de inicialização (deixe no seu adm.html principal) -->
+  <!--
+  <script type="module">
+    import { init } from './js/turmas_adm.js';
+    document.addEventListener('DOMContentLoaded', () => init());
+  </script>
+  -->
+</body>
+</html>
