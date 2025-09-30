@@ -7,8 +7,15 @@ import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/
 let todosOsAlunos = [];
 let currentContainer = null;
 
+/* =======================
+   Normalização — CAIXA ALTA
+   ======================= */
+function upperize(str){
+  return String(str || "").normalize("NFC").toLocaleUpperCase("pt-BR");
+}
+
 export function init(container) {
-  console.log("✅ Turmas (Professor) — somente leitura");
+  console.log("✅ Turmas (Professor) — somente leitura (nomes em CAPS)");
   if (!container) {
     console.error("❌ container ausente em turmas.js (professor)");
     return;
@@ -37,8 +44,17 @@ async function carregarDadosIniciais(container) {
   }
   try {
     const snapshot = await getDocs(collection(db, "matriculas"));
-    todosOsAlunos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    todosOsAlunos.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+    // cria campo derivado _nomeCaps para exibição/ordenção/pesquisa
+    todosOsAlunos = snapshot.docs.map(d => {
+      const data = { id: d.id, ...d.data() };
+      return { ...data, _nomeCaps: upperize(data.nome || "") };
+    });
+
+    // Ordena por nome em CAPS (pt-BR)
+    todosOsAlunos.sort((a, b) =>
+      (a._nomeCaps || "").localeCompare(b._nomeCaps || "", "pt-BR", { sensitivity: "base" })
+    );
+
     carregarOficinasUnicas(container);
     renderizarTabela(container);
   } catch (e) {
@@ -63,7 +79,9 @@ function carregarOficinasUnicas(container) {
       }
     }
   }
-  const oficinasOrdenadas = Array.from(oficinasSet).sort();
+  const oficinasOrdenadas = Array.from(oficinasSet)
+    .sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
+
   filtroElement.innerHTML = '<option value="">Todas</option>';
   for (let k = 0; k < oficinasOrdenadas.length; k++) {
     const op = document.createElement("option");
@@ -80,12 +98,14 @@ function renderizarTabela(container) {
   if (!corpoTabelaTurmas || !filtroTurma || !filtroNome) return;
 
   const oficinaSelecionada = filtroTurma.value;
-  const nomePesquisado = (filtroNome.value || "").toLowerCase();
+  const termoBuscaCaps = upperize(filtroNome.value || "");
 
   const alunosFiltrados = todosOsAlunos.filter(aluno => {
-    const nomeDoAluno = (aluno.nome || "").toLowerCase();
-    const pertenceAOficina = !oficinaSelecionada || (aluno.oficinas && aluno.oficinas.indexOf(oficinaSelecionada) !== -1);
-    const correspondeAoNome = nomeDoAluno.indexOf(nomePesquisado) !== -1;
+    const nomeCaps = aluno._nomeCaps || "";
+    const pertenceAOficina =
+      !oficinaSelecionada ||
+      (aluno.oficinas && aluno.oficinas.indexOf(oficinaSelecionada) !== -1);
+    const correspondeAoNome = nomeCaps.indexOf(termoBuscaCaps) !== -1;
     return pertenceAOficina && correspondeAoNome;
   });
 
@@ -100,7 +120,7 @@ function renderizarTabela(container) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td data-label="Matrícula">${aluno.numeroMatricula || 'N/A'}</td>
-      <td data-label="Nome">${aluno.nome || 'N/A'}</td>
+      <td data-label="Nome">${aluno._nomeCaps || 'N/A'}</td>
       <td data-label="Oficinas">${Array.isArray(aluno.oficinas) ? aluno.oficinas.join(', ') : 'Nenhuma'}</td>
     `;
     frag.appendChild(tr);
