@@ -1,14 +1,19 @@
-// js/frequencia.js (VERSÃO CORRIGIDA - SEM BARRAS NO ID DO DOCUMENTO)
+// js/frequencia.js (NOMES EM CAPSLOCK + SEM BARRAS NO ID DO DOC)
 import { db, auth } from './firebase-config.js';
-import { collection, getDocs, doc, setDoc, getDoc, query, where, Timestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, getDocs, doc, setDoc, getDoc, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { mostrarNotificacao } from './notificacao.js';
+
+// --- Normalização: CAIXA ALTA ---
+function upperize(str){
+  return String(str || "").normalize("NFC").toLocaleUpperCase("pt-BR");
+}
 
 // --- Variáveis de escopo do módulo ---
 let containerElement = null;
 let turmaSelect, dataInput, salvarBtn, corpoTabela, filtroDistritoContainer, distritoSelect;
 
-export function init(container ) {
-  console.log("✅ Módulo de Frequência (Professor) com Filtro de Distrito inicializado!");
+export function init(container) {
+  console.log("✅ Módulo de Frequência (Professor) — NOMES EM CAPS + Filtro de Distrito");
   containerElement = container;
 
   // Seleção dos elementos do DOM
@@ -41,7 +46,8 @@ async function carregarOficinasUnicas() {
       const aluno = doc.data();
       if (aluno.oficinas) aluno.oficinas.forEach(oficina => oficinasSet.add(oficina.trim()));
     });
-    const oficinasOrdenadas = Array.from(oficinasSet).sort();
+    const oficinasOrdenadas = Array.from(oficinasSet)
+      .sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
     turmaSelect.innerHTML = '<option value="">Selecione uma oficina</option>';
     oficinasOrdenadas.forEach(oficina => {
       turmaSelect.innerHTML += `<option value="${oficina}">${oficina}</option>`;
@@ -63,21 +69,14 @@ function handleOficinaChange() {
 }
 
 function determinarDistrito(bairroAluno) {
-  // Lista dos distritos específicos
   const distritosEspecificos = ["Macaoca", "Cajazeiras", "União", "Cacimba Nova", "Paus Branco"];
-  
-  // Se o bairro do aluno for um dos distritos específicos, retorna ele mesmo
-  if (distritosEspecificos.includes(bairroAluno)) {
-    return bairroAluno;
-  }
-  
-  // Caso contrário, considera como "Sede"
+  if (distritosEspecificos.includes(bairroAluno)) return bairroAluno;
   return "Sede";
 }
 
-// NOVA FUNÇÃO: Sanitiza o nome da oficina para uso no ID do documento
+// Sanitiza o nome da oficina para uso no ID do documento
 function sanitizarNomeOficina(nomeOficina) {
-  return nomeOficina.replace(/\//g, '_'); // Substitui todas as barras por underscores
+  return nomeOficina.replace(/\//g, '_'); // Substitui barras por underscores
 }
 
 async function verificarEcarregarAlunos() {
@@ -90,20 +89,18 @@ async function verificarEcarregarAlunos() {
 
   if (!oficina || !dataSelecionada) return;
 
-  // Se for Percussão/Fanfarra e nenhum distrito foi selecionado, não carrega alunos
+  // Percussão/Fanfarra exige distrito
   if (oficina === "Percussão/Fanfarra" && !distritoSelecionado) {
     corpoTabela.innerHTML = `<tr><td colspan="2">Selecione um distrito/turma para Percussão/Fanfarra.</td></tr>`;
     return;
   }
 
-  // CORREÇÃO: Sanitiza o nome da oficina para evitar barras no ID do documento
+  // ID do doc sem barras
   const oficinaSanitizada = sanitizarNomeOficina(oficina);
-  
-  // Cria o docId baseado na oficina e distrito (se aplicável)
-  const docId = oficina === "Percussão/Fanfarra" && distritoSelecionado 
-    ? `${dataSelecionada}_${oficinaSanitizada}_${distritoSelecionado}` 
+  const docId = (oficina === "Percussão/Fanfarra" && distritoSelecionado)
+    ? `${dataSelecionada}_${oficinaSanitizada}_${distritoSelecionado}`
     : `${dataSelecionada}_${oficinaSanitizada}`;
-  
+
   const frequenciaRef = doc(db, "frequencias", docId);
 
   try {
@@ -111,42 +108,54 @@ async function verificarEcarregarAlunos() {
 
     if (docSnap.exists()) {
       const dataFormatada = new Date(dataSelecionada + 'T00:00:00').toLocaleDateString('pt-BR');
-      const distritoTexto = oficina === "Percussão/Fanfarra" && distritoSelecionado ? ` (${distritoSelecionado})` : '';
+      const distritoTexto = (oficina === "Percussão/Fanfarra" && distritoSelecionado) ? ` (${distritoSelecionado})` : '';
       corpoTabela.innerHTML = `<tr><td colspan="2" style="text-align: center; background-color: #fffbe6;">A frequência para esta turma${distritoTexto} já foi registrada no dia ${dataFormatada}.</td></tr>`;
       return;
     }
 
     salvarBtn.style.display = 'block';
     
-    // Busca todos os alunos da oficina primeiro
+    // Busca alunos da oficina
     const qAlunos = query(collection(db, "matriculas"), where("oficinas", "array-contains", oficina));
     const snapshotAlunos = await getDocs(qAlunos);
     
-    let alunos = snapshotAlunos.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let alunos = snapshotAlunos.docs.map(doc => {
+      const data = { id: doc.id, ...doc.data() };
+      return { ...data, _nomeCaps: upperize(data.nome || "") };
+    });
 
-    // Se for Percussão/Fanfarra, filtra por distrito
+    // Filtro de distrito para Percussão/Fanfarra
     if (oficina === "Percussão/Fanfarra" && distritoSelecionado) {
       alunos = alunos.filter(aluno => {
-        const bairroAluno = aluno.bairro;
-        const distritoDoAluno = determinarDistrito(bairroAluno);
+        const distritoDoAluno = determinarDistrito(aluno.bairro);
         return distritoDoAluno === distritoSelecionado;
       });
     }
 
-    alunos.sort((a, b) => a.nome.localeCompare(b.nome));
+    // Ordena por nome (CAPS)
+    alunos.sort((a, b) =>
+      (a._nomeCaps || "").localeCompare(b._nomeCaps || "", "pt-BR", { sensitivity: "base" })
+    );
 
     if (alunos.length === 0) {
-        const distritoTexto = oficina === "Percussão/Fanfarra" && distritoSelecionado ? ` no distrito ${distritoSelecionado}` : '';
-        corpoTabela.innerHTML = `<tr><td colspan="2">Nenhum aluno encontrado para esta oficina${distritoTexto}.</td></tr>`;
-        salvarBtn.style.display = 'none';
-        return;
+      const distritoTexto = (oficina === "Percussão/Fanfarra" && distritoSelecionado) ? ` no distrito ${distritoSelecionado}` : '';
+      corpoTabela.innerHTML = `<tr><td colspan="2">Nenhum aluno encontrado para esta oficina${distritoTexto}.</td></tr>`;
+      salvarBtn.style.display = 'none';
+      return;
     }
 
     alunos.forEach(aluno => {
       const linha = document.createElement("tr");
       linha.dataset.alunoId = aluno.id;
-      linha.dataset.alunoNome = aluno.nome;
-      linha.innerHTML = `\n        <td>${aluno.nome}</td>\n        <td class="status-cell">\n          <button class="btn-status presente" data-status="presente">Presente</button>\n          <button class="btn-status falta ativo" data-status="falta">Falta</button>\n        </td>\n      `;
+      // guardamos já em CAPS (para salvar assim)
+      linha.dataset.alunoNome = aluno._nomeCaps;
+      linha.innerHTML = `
+        <td>${aluno._nomeCaps}</td>
+        <td class="status-cell">
+          <button class="btn-status presente" data-status="presente">Presente</button>
+          <button class="btn-status falta ativo" data-status="falta">Falta</button>
+        </td>
+      `;
       corpoTabela.appendChild(linha);
     });
 
@@ -187,7 +196,8 @@ async function salvarFrequenciaAgrupada() {
       const botaoAtivo = linha.querySelector('.btn-status.ativo');
       listaDeAlunos.push({
         id: linha.dataset.alunoId,
-        nome: linha.dataset.alunoNome,
+        // salva o nome já EM CAPS
+        nome: upperize(linha.dataset.alunoNome),
         status: botaoAtivo ? botaoAtivo.dataset.status : 'nao_marcado'
       });
     }
@@ -201,12 +211,10 @@ async function salvarFrequenciaAgrupada() {
   salvarBtn.disabled = true;
   salvarBtn.textContent = "Salvando...";
 
-  // CORREÇÃO: Sanitiza o nome da oficina para evitar barras no ID do documento
+  // ID sem barras
   const oficinaSanitizada = sanitizarNomeOficina(oficina);
-
-  // O docId agora pode incluir o distrito para Percussão/Fanfarra
-  const docId = oficina === "Percussão/Fanfarra" && distritoSelecionado 
-    ? `${dataSelecionada}_${oficinaSanitizada}_${distritoSelecionado}` 
+  const docId = (oficina === "Percussão/Fanfarra" && distritoSelecionado)
+    ? `${dataSelecionada}_${oficinaSanitizada}_${distritoSelecionado}`
     : `${dataSelecionada}_${oficinaSanitizada}`;
 
   const frequenciaRef = doc(db, "frequencias", docId);
@@ -217,16 +225,17 @@ async function salvarFrequenciaAgrupada() {
   try {
     await setDoc(frequenciaRef, {
       data: dataFormatada,
-      oficina: oficina, // Mantém o nome original da oficina nos dados
-      distrito: oficina === "Percussão/Fanfarra" ? distritoSelecionado : null, // Salva o distrito se for Percussão/Fanfarra
-      professor: auth.currentUser.displayName || "Não identificado",
+      oficina: oficina, // mantém o nome original da oficina nos dados
+      distrito: (oficina === "Percussão/Fanfarra") ? distritoSelecionado : null,
+      // professor EM CAPS
+      professor: upperize(auth.currentUser?.displayName || "Não identificado"),
       alunos: listaDeAlunos,
       salvoEm: Timestamp.now()
     });
 
     mostrarNotificacao("Frequência registrada com sucesso!", "sucesso");
     
-    const distritoTexto = oficina === "Percussão/Fanfarra" && distritoSelecionado ? ` (${distritoSelecionado})` : '';
+    const distritoTexto = (oficina === "Percussão/Fanfarra" && distritoSelecionado) ? ` (${distritoSelecionado})` : '';
     corpoTabela.innerHTML = `<tr><td colspan="2" style="text-align: center; background-color: #e8f5e9;">Frequência salva${distritoTexto}! Selecione outra oficina ou data.</td></tr>`;
     salvarBtn.style.display = 'none';
 
