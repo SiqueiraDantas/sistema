@@ -1,24 +1,35 @@
-// js/turmas_adm.js — ADM (com botão Editar Oficinas)
+// js/turmas_adm.js — ADM (com botão Editar Oficinas) — Nomes em CAPSLOCK
 import { db } from './firebase-config.js';
 import { collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-let dadosMatriculas = []; // [{ id, ...data }]
+let dadosMatriculas = []; // [{ id, ...data, _nomeCaps, _respCaps }]
 let corpoTabela, filtroOficina, filtroProfessor;
 
 // refs do modal
 let modalEl, modalCloseEl, modalNomeEl, modalSelectEl, modalSalvarEl;
 let alunoEdicaoId = null;
 
-export function init() {
-  console.log("✅ Módulo de Turmas (Admin) inicializado!");
+/* =======================
+   Normalização (CAIXA ALTA)
+   ======================= */
+function upperize(str){
+  // Mantém acentos, apenas converte para maiúsculas em pt-BR
+  return String(str || "").normalize("NFC").toLocaleUpperCase("pt-BR");
+}
 
-  corpoTabela = document.getElementById('corpo-tabela-turmas');
-  filtroOficina = document.getElementById('filtro-oficina-turmas');
+/* =======================
+   Módulo Turmas (ADM)
+   ======================= */
+export function init() {
+  console.log("✅ Módulo de Turmas (Admin) — nomes em CAPSLOCK");
+
+  corpoTabela     = document.getElementById('corpo-tabela-turmas');
+  filtroOficina   = document.getElementById('filtro-oficina-turmas');
   filtroProfessor = document.getElementById('filtro-professor-turmas');
 
-  modalEl = document.getElementById('modal-editar-oficinas-adm');
-  modalCloseEl = modalEl ? modalEl.querySelector('.modal-close') : null;
-  modalNomeEl = document.getElementById('adm-modal-nome-aluno');
+  modalEl       = document.getElementById('modal-editar-oficinas-adm');
+  modalCloseEl  = modalEl ? modalEl.querySelector('.modal-close') : null;
+  modalNomeEl   = document.getElementById('adm-modal-nome-aluno');
   modalSelectEl = document.getElementById('adm-modal-select-oficinas');
   modalSalvarEl = document.getElementById('adm-modal-btn-salvar');
 
@@ -28,29 +39,37 @@ export function init() {
       if (e.target === modalEl) fecharModal();
     });
   }
-  if (modalSalvarEl) {
-    modalSalvarEl.addEventListener('click', salvarEdicaoOficinas);
-  }
+  if (modalSalvarEl) modalSalvarEl.addEventListener('click', salvarEdicaoOficinas);
 
   carregarDadosMatriculas();
   adicionarEventListeners();
 }
 
 function adicionarEventListeners() {
-  if (filtroOficina) filtroOficina.addEventListener('change', aplicarFiltros);
+  if (filtroOficina)   filtroOficina.addEventListener('change', aplicarFiltros);
   if (filtroProfessor) filtroProfessor.addEventListener('input', aplicarFiltros);
 }
 
 async function carregarDadosMatriculas() {
   try {
     if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="6">Carregando...</td></tr>';
+
     const querySnapshot = await getDocs(collection(db, "matriculas"));
     dadosMatriculas = [];
     querySnapshot.forEach(d => {
-      dadosMatriculas.push({ id: d.id, ...d.data() });
+      const raw = { id: d.id, ...d.data() };
+
+      const respObj = raw && raw.responsavel ? raw.responsavel : {};
+      const _nomeCaps = upperize(raw && raw.nome ? raw.nome : "");
+      const _respCaps = upperize(respObj && respObj.nome ? respObj.nome : "");
+
+      dadosMatriculas.push({ ...raw, _nomeCaps, _respCaps });
     });
-    // Ordena por nome de aluno
-    dadosMatriculas.sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+
+    // Ordena por nome em CAPS
+    dadosMatriculas.sort((a, b) =>
+      (a._nomeCaps || "").localeCompare(b._nomeCaps || "", "pt-BR", { sensitivity: "base" })
+    );
 
     popularFiltroOficinas();
     popularTabela(dadosMatriculas);
@@ -74,7 +93,7 @@ function popularFiltroOficinas() {
       }
     }
   }
-  const ordenadas = Array.from(setOficinas).sort();
+  const ordenadas = Array.from(setOficinas).sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
   filtroOficina.innerHTML = '<option value="">Todas</option>';
   for (let k = 0; k < ordenadas.length; k++) {
     const op = document.createElement('option');
@@ -95,11 +114,11 @@ function popularTabela(dados) {
   let html = '';
   for (let i = 0; i < dados.length; i++) {
     const m = dados[i];
-    const nomeAluno = m && m.nome ? m.nome : 'N/A';
 
-    const resp = (m && m.responsavel) ? m.responsavel : {};
-    const nomeResp = resp && resp.nome ? resp.nome : 'N/A';
-    const telResp = resp && resp.telefone ? resp.telefone : 'N/A';
+    const nomeAluno = m && m._nomeCaps ? m._nomeCaps : 'N/A';
+    const respObj   = m && m.responsavel ? m.responsavel : {};
+    const nomeResp  = m && m._respCaps ? m._respCaps : 'N/A';
+    const telResp   = respObj && respObj.telefone ? respObj.telefone : 'N/A';
 
     const oficinasStr = (m && Array.isArray(m.oficinas)) ? m.oficinas.join(', ') : 'N/A';
     const professores = 'A definir'; // placeholder
@@ -130,7 +149,6 @@ function popularTabela(dados) {
 
 function aplicarFiltros() {
   const oficinaSelecionada = (filtroOficina && filtroOficina.value) ? filtroOficina.value.toLowerCase() : "";
-  // ainda não filtramos por professor até integrar o dado
   let dados = dadosMatriculas;
 
   if (oficinaSelecionada) {
@@ -143,13 +161,19 @@ function aplicarFiltros() {
       return false;
     });
   }
+
+  // Mantém ordenação por nome em CAPS
+  dados.sort((a, b) =>
+    (a._nomeCaps || "").localeCompare(b._nomeCaps || "", "pt-BR", { sensitivity: "base" })
+  );
+
   popularTabela(dados);
 }
 
 // ======= Edição (modal) =======
 function onClickEditar(e) {
-  const btn = e.currentTarget;
-  const id = btn.getAttribute('data-id');
+  const btn  = e.currentTarget;
+  const id   = btn.getAttribute('data-id');
   const nome = btn.getAttribute('data-nome') || '';
 
   const reg = dadosMatriculas.find(x => x.id === id);
@@ -159,7 +183,7 @@ function onClickEditar(e) {
   }
   alunoEdicaoId = id;
 
-  if (modalNomeEl) modalNomeEl.textContent = nome;
+  if (modalNomeEl) modalNomeEl.textContent = nome; // já vem em CAPS
 
   // montar lista de oficinas (todas as que aparecem no dataset)
   const setOficinas = new Set();
@@ -172,7 +196,7 @@ function onClickEditar(e) {
       }
     }
   }
-  const todas = Array.from(setOficinas).sort();
+  const todas = Array.from(setOficinas).sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
 
   if (modalSelectEl) {
     modalSelectEl.innerHTML = "";
@@ -242,6 +266,5 @@ function escapeHTML(str) {
   });
 }
 function encodeHTMLAttr(str){
-  // simples, reutiliza escapeHTML
   return escapeHTML(str);
 }
