@@ -1,76 +1,78 @@
-// js/relatorio.js (Sistema de Relatórios COM FILTRO DE DISTRITO)
+// js/relatorio.js — Sistema de Relatórios COM FILTRO DE DISTRITO + Impressão simples (NOMES EM CAPSLOCK)
 import { db, auth } from './firebase-config.js';
 import {
   collection,
   getDocs,
-  query,
-  where,
-  Timestamp,
-  doc,
-  getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let dadosRelatorio = {
-  frequencias: [],
-  planosDeAula: [],
-  matriculas: []
+  frequencias: [],    // registros por data
+  planosDeAula: [],   // planos do mês
+  matriculas: [],     // alunos matriculados na oficina (com _nomeCaps)
+  contexto: {         // usado para título da impressão
+    oficina: "",
+    mes: 0,
+    ano: 0,
+    distrito: "",
+    professor: "",
+    local: "",
+  }
 };
 
-export function init(container, userRole = 'admin') {
-  console.log("✅ Módulo de Relatórios com Filtro de Distrito inicializado!");
+/* =======================
+   Normalização — CAIXA ALTA
+   ======================= */
+function upperize(str){
+  return String(str || "").normalize("NFC").toLocaleUpperCase("pt-BR");
+}
 
+// ========= INIT =========
+export function init(container, userRole = 'admin') {
+  console.log("✅ Relatórios (nomes em CAPSLOCK) + Filtro de Distrito + Impressão");
   const btnGerarRelatorio = container.querySelector("#btn-gerar-relatorio");
-  const selectOficina = container.querySelector("#oficina-relatorio");
-  const selectDistrito = container.querySelector("#distrito-relatorio");
-  const filtroDistritoContainer = container.querySelector("#filtro-distrito-relatorio");
-  const btnExportarPdf = container.querySelector("#btn-exportar-pdf");
-  const btnExportarExcel = container.querySelector("#btn-exportar-excel");
-  const btnImprimir = container.querySelector("#btn-imprimir");
+  const btnExportarPdf    = container.querySelector("#btn-exportar-pdf");
+  const btnExportarExcel  = container.querySelector("#btn-exportar-excel");
+  const btnImprimir       = container.querySelector("#btn-imprimir");
 
   btnGerarRelatorio?.addEventListener("click", () => gerarRelatorio(container));
   btnExportarPdf?.addEventListener("click", () => exportarPDF(container));
   btnExportarExcel?.addEventListener("click", () => exportarExcel(container));
   btnImprimir?.addEventListener("click", () => imprimirRelatorio(container));
 
-  // NOVO: Listener para mostrar/esconder filtro de distrito
+  const selectOficina = container.querySelector("#oficina-relatorio");
   selectOficina?.addEventListener("change", () => handleOficinaChange(container));
 
   carregarDadosIniciais(container);
 }
 
+// ========= UI AUX =========
 function handleOficinaChange(container) {
   const selectOficina = container.querySelector("#oficina-relatorio");
   const filtroDistritoContainer = container.querySelector("#filtro-distrito-relatorio");
   const selectDistrito = container.querySelector("#distrito-relatorio");
-  
+
   const oficina = selectOficina.value;
-  
   if (oficina === "Percussão/Fanfarra") {
     filtroDistritoContainer.style.display = "block";
   } else {
     filtroDistritoContainer.style.display = "none";
-    selectDistrito.value = ""; // Limpa a seleção do distrito
+    selectDistrito.value = "";
   }
 }
 
+// Mapeia bairro -> distrito
 function determinarDistrito(bairroAluno) {
-  // Lista dos distritos específicos
   const distritosEspecificos = ["Macaoca", "Cajazeiras", "União", "Cacimba Nova", "Paus Branco"];
-  
-  // Se o bairro do aluno for um dos distritos específicos, retorna ele mesmo
-  if (distritosEspecificos.includes(bairroAluno)) {
-    return bairroAluno;
-  }
-  
-  // Caso contrário, considera como "Sede"
+  if (distritosEspecificos.includes(bairroAluno)) return bairroAluno;
   return "Sede";
 }
 
-// Função para sanitizar nome da oficina (remove barras)
+// remove "/"
 function sanitizarNomeOficina(nomeOficina) {
   return nomeOficina.replace(/\//g, '_');
 }
 
+// ========= CARREGAR OFICINAS =========
 async function carregarDadosIniciais(container) {
   const selectOficina = container.querySelector("#oficina-relatorio");
   const statusCarregamento = container.querySelector("#status-carregamento");
@@ -88,7 +90,7 @@ async function carregarDadosIniciais(container) {
       }
     });
 
-    const oficinasOrdenadas = Array.from(oficinasSet).sort();
+    const oficinasOrdenadas = Array.from(oficinasSet).sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
     selectOficina.innerHTML = '<option value="">Selecione uma oficina</option>';
     oficinasOrdenadas.forEach(oficina => {
       const opt = document.createElement("option");
@@ -98,7 +100,6 @@ async function carregarDadosIniciais(container) {
     });
 
     statusCarregamento.textContent = "Pronto para gerar relatório";
-
   } catch (err) {
     console.error("Erro ao carregar oficinas:", err);
     statusCarregamento.textContent = "Erro ao carregar dados";
@@ -106,23 +107,22 @@ async function carregarDadosIniciais(container) {
   }
 }
 
+// ========= GERAR RELATÓRIO =========
 async function gerarRelatorio(container) {
   const selectOficina = container.querySelector("#oficina-relatorio");
-  const selectMes = container.querySelector("#mes-relatorio");
-  const selectAno = container.querySelector("#ano-relatorio");
-  const selectDistrito = container.querySelector("#distrito-relatorio");
-  const btnGerar = container.querySelector("#btn-gerar-relatorio");
-  const areaResultados = container.querySelector("#area-resultados");
-  const status = container.querySelector("#status-carregamento");
+  const selectMes     = container.querySelector("#mes-relatorio");
+  const selectAno     = container.querySelector("#ano-relatorio");
+  const selectDistrito= container.querySelector("#distrito-relatorio");
+  const btnGerar      = container.querySelector("#btn-gerar-relatorio");
+  const areaResultados= container.querySelector("#area-resultados");
+  const status        = container.querySelector("#status-carregamento");
 
-  const oficina = selectOficina.value;
-  const mes = parseInt(selectMes.value);
-  const ano = parseInt(selectAno.value);
+  const oficina  = selectOficina.value;
+  const mes      = parseInt(selectMes.value, 10);
+  const ano      = parseInt(selectAno.value, 10);
   const distrito = selectDistrito.value;
 
   if (!oficina) return mostrarToast(container, "Selecione uma oficina", "erro");
-
-  // Se for Percussão/Fanfarra, distrito é obrigatório
   if (oficina === "Percussão/Fanfarra" && !distrito) {
     return mostrarToast(container, "Selecione um distrito para Percussão/Fanfarra", "erro");
   }
@@ -132,7 +132,8 @@ async function gerarRelatorio(container) {
     btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
     status.textContent = "Gerando relatório...";
 
-    console.log(`🔍 Buscando dados para: ${oficina}${distrito ? ` (${distrito})` : ''}, ${mes}/${ano}`);
+    dadosRelatorio.contexto = { oficina, mes, ano, distrito, professor: "", local: distrito || "Sede" };
+
     await buscarDadosRelatorio(oficina, mes, ano, distrito);
     renderizarRelatorio(container, oficina, mes, ano, distrito);
 
@@ -140,7 +141,6 @@ async function gerarRelatorio(container) {
     habilitarBotoesExportacao(container, true);
     status.textContent = "Relatório gerado com sucesso!";
     mostrarToast(container, "Relatório gerado com sucesso!");
-
   } catch (err) {
     console.error("Erro ao gerar relatório:", err);
     status.textContent = "Erro ao gerar relatório";
@@ -151,165 +151,127 @@ async function gerarRelatorio(container) {
   }
 }
 
+// ========= BUSCAS NO FIRESTORE =========
 async function buscarDadosRelatorio(oficina, mes, ano, distrito = null) {
-  console.log(`📊 Iniciando busca de dados para ${oficina}${distrito ? ` (${distrito})` : ''} em ${mes}/${ano}`);
-  
-  // 1. Buscar matrículas da oficina
+  // 1) Matriculas
   const matriculasSnap = await getDocs(collection(db, "matriculas"));
-  let matriculasFiltradas = matriculasSnap.docs
+  let matriculas = matriculasSnap.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
     .filter(m => m.oficinas?.includes(oficina));
 
-  // Se for Percussão/Fanfarra, filtra por distrito
   if (oficina === "Percussão/Fanfarra" && distrito) {
-    matriculasFiltradas = matriculasFiltradas.filter(matricula => {
-      const bairroAluno = matricula.bairro;
-      const distritoDoAluno = determinarDistrito(bairroAluno);
-      return distritoDoAluno === distrito;
+    matriculas = matriculas.filter(m => {
+      const bairro = m.bairro || m.escolaBairro || ""; // ajuste conforme seus campos
+      return determinarDistrito(bairro) === distrito;
     });
   }
 
-  dadosRelatorio.matriculas = matriculasFiltradas;
-  console.log(`👥 Encontradas ${dadosRelatorio.matriculas.length} matrículas para ${oficina}${distrito ? ` (${distrito})` : ''}`);
+  // Deriva nome em CAPS e ordena por CAPS
+  matriculas = matriculas.map(m => ({ ...m, _nomeCaps: upperize(m.nome || "") }));
+  matriculas.sort((a,b) => (a._nomeCaps||"").localeCompare(b._nomeCaps||"", "pt-BR", {sensitivity:"base"}));
+  dadosRelatorio.matriculas = matriculas;
 
-  // 2. Buscar frequências
+  // 2) Frequencias
   await buscarFrequencias(oficina, mes, ano, distrito);
 
-  // 3. Buscar planos de aula
+  // 3) Planos de aula
   await buscarPlanosDeAula(oficina, mes, ano, distrito);
+
+  // Capturar professor do plano mais recente (se existir) — em CAPS
+  const planoMaisRecente = dadosRelatorio.planosDeAula[0];
+  if (planoMaisRecente) {
+    const prof = planoMaisRecente.professor || planoMaisRecente.nomeProfessor || "";
+    dadosRelatorio.contexto.professor = upperize(prof);
+  }
 }
 
 async function buscarFrequencias(oficina, mes, ano, distrito = null) {
-  console.log(`📅 Buscando frequências para ${oficina}${distrito ? ` (${distrito})` : ''} em ${mes}/${ano}`);
-  
-  try {
-    // Busca TODOS os documentos da coleção frequencias
-    const frequenciasSnap = await getDocs(collection(db, "frequencias"));
-    dadosRelatorio.frequencias = [];
+  const frequenciasSnap = await getDocs(collection(db, "frequencias"));
+  const lista = [];
+  const oficinaSan = sanitizarNomeOficina(oficina);
 
-    const oficinaSanitizada = sanitizarNomeOficina(oficina);
+  frequenciasSnap.docs.forEach(docSnap => {
+    const data = docSnap.data();
+    const docId = docSnap.id;
 
-    frequenciasSnap.docs.forEach(doc => {
-      const data = doc.data();
-      const docId = doc.id;
-      
-      console.log(`🔍 Analisando documento: ${docId}`, data);
-      
-      // Verifica se o documento pertence à oficina e período desejados
-      let pertenceAOficina = false;
-      let pertenceAoPeriodo = false;
-      let pertenceAoDistrito = true; // Por padrão, assume que pertence (para oficinas que não são Percussão/Fanfarra)
-      
-      // Método 1: Verificar se o ID do documento contém a oficina (sanitizada)
-      if (docId.includes(oficinaSanitizada)) {
-        pertenceAOficina = true;
-      }
-      
-      // Método 2: Verificar se há um campo 'oficina' no documento
-      if (data.oficina === oficina) {
-        pertenceAOficina = true;
-      }
+    // Verifica oficina
+    let pertenceAOficina = false;
+    if (docId.includes(oficinaSan)) pertenceAOficina = true;
+    if (data.oficina === oficina) pertenceAOficina = true;
 
-      // Método 3: Verificar distrito para Percussão/Fanfarra
-      if (oficina === "Percussão/Fanfarra" && distrito) {
-        // Verifica se o ID do documento contém o distrito
-        if (docId.includes(`_${distrito}`)) {
-          pertenceAoDistrito = true;
-        } else if (data.distrito === distrito) {
-          pertenceAoDistrito = true;
-        } else {
-          pertenceAoDistrito = false;
-        }
-      }
-      
-      // Método 4: Extrair data do ID do documento (formato: YYYY-MM-DD_Oficina)
-      const dataMatch = docId.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if (dataMatch) {
-        const [, docAno, docMes] = dataMatch;
-        if (parseInt(docAno) === ano && parseInt(docMes) === mes) {
-          pertenceAoPeriodo = true;
-        }
-      }
-      
-      // Método 5: Verificar campo 'data' se existir
-      if (data.data) {
-        const dataDoc = data.data.toDate ? data.data.toDate() : new Date(data.data);
-        if (dataDoc.getFullYear() === ano && (dataDoc.getMonth() + 1) === mes) {
-          pertenceAoPeriodo = true;
-        }
-      }
-      
-      // Se pertence à oficina, ao período e ao distrito, adiciona aos dados
-      if (pertenceAOficina && pertenceAoPeriodo && pertenceAoDistrito) {
-        console.log(`✅ Documento ${docId} incluído no relatório`);
-        dadosRelatorio.frequencias.push({ id: docId, ...data });
-      }
-    });
+    // Verifica período
+    let pertenceAoPeriodo = false;
+    const m = docId.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      const [, Y, M] = m;
+      if (parseInt(Y,10)===ano && parseInt(M,10)===mes) pertenceAoPeriodo = true;
+    }
+    if (data.data) {
+      const d = data.data.toDate ? data.data.toDate() : new Date(data.data);
+      if (d.getFullYear()===ano && (d.getMonth()+1)===mes) pertenceAoPeriodo = true;
+    }
 
-    console.log(`📊 Total de frequências encontradas: ${dadosRelatorio.frequencias.length}`);
-    
-  } catch (error) {
-    console.error("Erro ao buscar frequências:", error);
-  }
+    // Verifica distrito se necessário
+    let pertenceAoDistrito = true;
+    if (oficina === "Percussão/Fanfarra" && distrito) {
+      pertenceAoDistrito = !!(docId.includes(`_${distrito}`) || data.distrito === distrito);
+    }
+
+    if (pertenceAOficina && pertenceAoPeriodo && pertenceAoDistrito) {
+      // Normaliza a data do registro
+      let dataAula = null;
+      if (data.data) dataAula = data.data.toDate ? data.data.toDate() : new Date(data.data);
+      else if (m) dataAula = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00`);
+
+      lista.push({
+        id: docId,
+        dataAula,
+        ...data
+      });
+    }
+  });
+
+  // Ordena por data
+  lista.sort((a,b) => (a.dataAula?.getTime()||0) - (b.dataAula?.getTime()||0));
+  dadosRelatorio.frequencias = lista;
 }
 
 async function buscarPlanosDeAula(oficina, mes, ano, distrito = null) {
-  console.log(`📚 Buscando planos de aula para ${oficina}${distrito ? ` (${distrito})` : ''} em ${mes}/${ano}`);
-  
-  try {
-    // Busca TODOS os planos de aula primeiro
-    const planosSnap = await getDocs(collection(db, "planosDeAula"));
-    dadosRelatorio.planosDeAula = [];
+  const planosSnap = await getDocs(collection(db, "planosDeAula"));
+  const planos = [];
 
-    planosSnap.docs.forEach(doc => {
-      const data = doc.data();
-      
-      // Verifica se pertence à oficina
-      if (data.oficina === oficina) {
-        // Verifica se pertence ao período
-        let pertenceAoPeriodo = false;
-        
-        if (data.data) {
-          const dataPlano = data.data.toDate ? data.data.toDate() : new Date(data.data);
-          if (dataPlano.getFullYear() === ano && (dataPlano.getMonth() + 1) === mes) {
-            pertenceAoPeriodo = true;
-          }
-        }
+  planosSnap.docs.forEach(docSnap => {
+    const data = docSnap.data();
+    if (data.oficina !== oficina) return;
 
-        // Para Percussão/Fanfarra, verifica se pertence ao distrito
-        let pertenceAoDistrito = true;
-        if (oficina === "Percussão/Fanfarra" && distrito) {
-          // Se o plano tem campo distrito, verifica
-          if (data.distrito) {
-            pertenceAoDistrito = data.distrito === distrito;
-          }
-          // Se não tem campo distrito, assume que é válido para todos os distritos
-          // (planos antigos ou gerais)
-        }
-        
-        if (pertenceAoPeriodo && pertenceAoDistrito) {
-          console.log(`✅ Plano de aula incluído: ${data.titulo || 'Sem título'}`);
-          dadosRelatorio.planosDeAula.push({ id: doc.id, ...data });
-        }
-      }
-    });
+    let noPeriodo = false;
+    if (data.data) {
+      const d = data.data.toDate ? data.data.toDate() : new Date(data.data);
+      if (d.getFullYear()===ano && (d.getMonth()+1)===mes) noPeriodo = true;
+    }
 
-    // Ordena por data (mais recente primeiro)
-    dadosRelatorio.planosDeAula.sort((a, b) => {
-      const dataA = a.data ? (a.data.toDate ? a.data.toDate() : new Date(a.data)) : new Date(0);
-      const dataB = b.data ? (b.data.toDate ? b.data.toDate() : new Date(b.data)) : new Date(0);
-      return dataB - dataA;
-    });
+    let noDistrito = true;
+    if (oficina === "Percussão/Fanfarra" && distrito && data.distrito) {
+      noDistrito = (data.distrito === distrito);
+    }
 
-    console.log(`📚 Total de planos de aula encontrados: ${dadosRelatorio.planosDeAula.length}`);
-    
-  } catch (error) {
-    console.error("Erro ao buscar planos de aula:", error);
-  }
+    if (noPeriodo && noDistrito) {
+      planos.push({ id: docSnap.id, ...data });
+    }
+  });
+
+  planos.sort((a,b) => {
+    const A = a.data ? (a.data.toDate ? a.data.toDate() : new Date(a.data)) : new Date(0);
+    const B = b.data ? (b.data.toDate ? b.data.toDate() : new Date(b.data)) : new Date(0);
+    return B - A;
+  });
+
+  dadosRelatorio.planosDeAula = planos;
 }
 
+// ========= RENDER NA TELA =========
 function renderizarRelatorio(container, oficina, mes, ano, distrito = null) {
-  console.log("🎨 Renderizando relatório...");
+  console.log("🎨 Renderizando relatório (NOMES EM CAPS)...");
   atualizarEstatisticasGerais(container);
   renderizarTabelaFrequencia(container);
   renderizarListaAulas(container);
@@ -321,50 +283,42 @@ function atualizarEstatisticasGerais(container) {
   const frequenciaMedia = container.querySelector("#frequencia-media");
 
   totalAlunos.textContent = dadosRelatorio.matriculas.length;
-  totalAulas.textContent = dadosRelatorio.planosDeAula.length;
+  totalAulas.textContent = dadosRelatorio.frequencias.length;
 
   // Calcula frequência média
   let totalPresencas = 0;
   let totalRegistros = 0;
 
   dadosRelatorio.frequencias.forEach(freq => {
-    console.log("📊 Processando frequência:", freq);
-    
-    // Método 1: Array de alunos
+    // Array de alunos
     if (Array.isArray(freq.alunos)) {
       freq.alunos.forEach(aluno => {
-        if (aluno.status) {
+        if (aluno?.status != null) {
           totalRegistros++;
-          if (aluno.status.toLowerCase() === 'presente') {
+          if (String(aluno.status).toLowerCase() === 'presente' || String(aluno.status).toLowerCase() === 'p' || aluno.status === true) {
             totalPresencas++;
           }
         }
       });
     }
-    
-    // Método 2: Objeto presencas
+    // Objeto presencas
     else if (freq.presencas && typeof freq.presencas === 'object') {
       Object.values(freq.presencas).forEach(presente => {
         totalRegistros++;
-        if (presente === true) {
-          totalPresencas++;
-        }
+        const s = String(presente).toLowerCase();
+        if (presente === true || s === 'presente' || s === 'p') totalPresencas++;
       });
     }
-    
-    // Método 3: Status direto
+    // Status direto
     else if (freq.status) {
       totalRegistros++;
-      if (freq.status.toLowerCase() === 'presente') {
-        totalPresencas++;
-      }
+      const s = String(freq.status).toLowerCase();
+      if (s === 'presente' || s === 'p' || freq.status === true) totalPresencas++;
     }
   });
 
   const media = totalRegistros > 0 ? (totalPresencas / totalRegistros * 100) : 0;
   frequenciaMedia.textContent = `${media.toFixed(1)}%`;
-  
-  console.log(`📈 Estatísticas: ${dadosRelatorio.matriculas.length} alunos, ${dadosRelatorio.planosDeAula.length} aulas, ${media.toFixed(1)}% frequência`);
 }
 
 function renderizarTabelaFrequencia(container) {
@@ -380,69 +334,73 @@ function renderizarTabelaFrequencia(container) {
     return;
   }
 
-  // Inicializa estatísticas para cada aluno matriculado
+  // Inicializa estatísticas para cada aluno matriculado (chave = nome CAPS)
   const estatisticas = {};
   dadosRelatorio.matriculas.forEach(matricula => {
-    estatisticas[matricula.nome] = { presencas: 0, faltas: 0, total: 0 };
+    const key = upperize(matricula.nome || "");
+    estatisticas[key] = { presencas: 0, faltas: 0, total: 0 };
   });
 
   // Processa cada registro de frequência
   dadosRelatorio.frequencias.forEach(freq => {
-    console.log("🔍 Processando frequência para tabela:", freq);
-    
-    // Método 1: Array de alunos
+    // Array de alunos
     if (Array.isArray(freq.alunos)) {
       freq.alunos.forEach(aluno => {
-        const nome = aluno.nome?.trim();
-        if (nome && estatisticas[nome]) {
-          estatisticas[nome].total++;
-          if (aluno.status?.toLowerCase() === 'presente') {
-            estatisticas[nome].presencas++;
+        const key = upperize(aluno?.nome?.trim() || "");
+        if (key && estatisticas[key]) {
+          estatisticas[key].total++;
+          const s = String(aluno.status || '').toLowerCase();
+          if (s === 'presente' || s === 'p' || aluno.status === true) {
+            estatisticas[key].presencas++;
           } else {
-            estatisticas[nome].faltas++;
+            estatisticas[key].faltas++;
           }
         }
       });
     }
-    
-    // Método 2: Objeto presencas
+    // Objeto presencas (chaves são nomes)
     else if (freq.presencas && typeof freq.presencas === 'object') {
       Object.entries(freq.presencas).forEach(([nome, presente]) => {
-        if (estatisticas[nome]) {
-          estatisticas[nome].total++;
-          if (presente === true) {
-            estatisticas[nome].presencas++;
+        const key = upperize(String(nome || '').trim());
+        if (estatisticas[key]) {
+          estatisticas[key].total++;
+          const s = String(presente).toLowerCase();
+          if (presente === true || s === 'presente' || s === 'p') {
+            estatisticas[key].presencas++;
           } else {
-            estatisticas[nome].faltas++;
+            estatisticas[key].faltas++;
           }
         }
       });
     }
-    
-    // Método 3: Status direto (um aluno por registro)
-    else if (freq.alunoNome && freq.status) {
-      const nome = freq.alunoNome;
-      if (estatisticas[nome]) {
-        estatisticas[nome].total++;
-        if (freq.status.toLowerCase() === 'presente') {
-          estatisticas[nome].presencas++;
+    // Status direto (um aluno por registro)
+    else if (freq.alunoNome && freq.status != null) {
+      const key = upperize(freq.alunoNome);
+      if (estatisticas[key]) {
+        estatisticas[key].total++;
+        const s = String(freq.status).toLowerCase();
+        if (s === 'presente' || s === 'p' || freq.status === true) {
+          estatisticas[key].presencas++;
         } else {
-          estatisticas[nome].faltas++;
+          estatisticas[key].faltas++;
         }
       }
     }
   });
 
-  // Renderiza a tabela
+  // Renderiza a tabela (ordenada por nome CAPS)
+  const entriesOrdenadas = Object.entries(estatisticas)
+    .sort((a,b)=>a[0].localeCompare(b[0], "pt-BR", {sensitivity:"base"}));
+
   corpo.innerHTML = "";
-  Object.entries(estatisticas).forEach(([nome, stats]) => {
+  entriesOrdenadas.forEach(([nomeCaps, stats]) => {
     const percentual = stats.total > 0 ? (stats.presencas / stats.total) * 100 : 0;
     const classeFrequencia = percentual >= 80 ? "frequencia-alta" : 
                            percentual >= 60 ? "frequencia-media" : "frequencia-baixa";
     
     const linha = document.createElement("tr");
     linha.innerHTML = `
-      <td>${nome}</td>
+      <td>${nomeCaps}</td>
       <td>${stats.presencas}</td>
       <td>${stats.faltas}</td>
       <td class="${classeFrequencia}">${percentual.toFixed(1)}%</td>
@@ -450,7 +408,7 @@ function renderizarTabelaFrequencia(container) {
     corpo.appendChild(linha);
   });
 
-  console.log("✅ Tabela de frequência renderizada");
+  console.log("✅ Tabela de frequência renderizada (nomes em CAPS)");
 }
 
 function renderizarListaAulas(container) {
@@ -466,26 +424,22 @@ function renderizarListaAulas(container) {
     const dataAula = plano.data ? 
       (plano.data.toDate ? plano.data.toDate() : new Date(plano.data)) : 
       new Date();
+
+    const profCaps = upperize(plano.professor || plano.nomeProfessor || "Professor não informado");
     
     const div = document.createElement("div");
     div.className = "aula-item";
     div.innerHTML = `
       <div class="aula-titulo">${plano.titulo || "Aula sem título"}</div>
-      <div class="aula-data">${dataAula.toLocaleDateString('pt-BR')} - ${plano.professor || plano.nomeProfessor || "Professor não informado"}</div>
+      <div class="aula-data">${dataAula.toLocaleDateString('pt-BR')} - ${profCaps}</div>
     `;
     lista.appendChild(div);
   });
 
-  console.log("✅ Lista de aulas renderizada");
+  console.log("✅ Lista de aulas renderizada (nomes em CAPS)");
 }
 
-function habilitarBotoesExportacao(container, habilitar) {
-  ["#btn-exportar-pdf", "#btn-exportar-excel", "#btn-imprimir"].forEach(sel => {
-    const btn = container.querySelector(sel);
-    if (btn) btn.disabled = !habilitar;
-  });
-}
-
+// ========= EXPORTAÇÕES =========
 function exportarPDF(container) {
   mostrarToast(container, "Funcionalidade de exportação PDF em desenvolvimento.");
 }
@@ -494,15 +448,84 @@ function exportarExcel(container) {
   mostrarToast(container, "Funcionalidade de exportação Excel em desenvolvimento.");
 }
 
+// ========= IMPRESSÃO (IMPRIME A TABELA QUE JÁ ESTÁ NA TELA) =========
 function imprimirRelatorio(container) {
+  const tabela = container.querySelector('#tabela-frequencia-individual');
+  if (!tabela) {
+    mostrarToast(container, "Tabela não encontrada para impressão.", "erro");
+    return;
+  }
+
+  // Clona a tabela exibida
+  const tabelaClone = tabela.cloneNode(true);
+
+  // Contexto (só para um título simples na impressão)
+  const ctx = dadosRelatorio?.contexto || {};
+  const nomeMes = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][ctx.mes || 0] || "";
+  const tituloHTML = `
+    <div style="font-family:Poppins,system-ui,sans-serif;margin:0 0 12px 0;">
+      <div style="font-weight:800;font-size:18px;">Relatório de Frequência</div>
+      <div style="font-size:12px;color:#444;">
+        ${ctx.oficina ? `<strong>Oficina:</strong> ${ctx.oficina} &nbsp;` : ""}
+        ${ctx.mes ? `<strong>Mês/Ano:</strong> ${nomeMes}/${ctx.ano||""}` : ""}
+        ${ctx.professor ? ` &nbsp; <strong>Professor(a):</strong> ${upperize(ctx.professor)}` : ""}
+      </div>
+    </div>
+  `;
+
+  // Cria overlay temporário
+  const overlay = document.createElement('div');
+  overlay.id = 'print-only';
+  overlay.innerHTML = tituloHTML;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'tabela-wrapper';
+  wrap.appendChild(tabelaClone);
+  overlay.appendChild(wrap);
+
+  // Estilos para imprimir apenas o overlay (e garantir thead repetindo)
+  const style = document.createElement('style');
+  style.id = 'print-only-style';
+  style.textContent = `
+    @page { size: A4 portrait; margin: 14mm; }
+    @media print {
+      body > *:not(#print-only){ display: none !important; }
+      #print-only { display: block !important; color:#000; }
+      #print-only .tabela-wrapper{ overflow: visible !important; }
+      #print-only thead { display: table-header-group; }
+      #print-only tfoot { display: table-footer-group; }
+      #print-only tr { page-break-inside: avoid; }
+    }
+    @media screen {
+      #print-only{
+        position: fixed; inset: 0; background: #fff; padding: 16px;
+        z-index: 9999; overflow: auto; box-shadow: 0 0 0 9999px rgba(0,0,0,.4);
+      }
+    }
+  `;
+
+  // Injeta e imprime
+  document.head.appendChild(style);
+  document.body.appendChild(overlay);
+
+  const cleanup = () => {
+    overlay.remove();
+    style.remove();
+    window.removeEventListener('afterprint', cleanup);
+  };
+
+  window.addEventListener('afterprint', cleanup);
   window.print();
+  // fallback caso afterprint não dispare
+  setTimeout(() => { try { cleanup(); } catch(e){} }, 1200);
 }
 
+
+// ========= TOAST =========
 function mostrarToast(container, mensagem, tipo = "sucesso") {
-  const toast = container.querySelector("#toast-relatorio");
-  const msg = container.querySelector("#toast-mensagem-relatorio");
+  const toast = container.querySelector("#toast-relatorio") || document.getElementById("toast-relatorio");
+  const msg = container.querySelector("#toast-mensagem-relatorio") || document.getElementById("toast-mensagem-relatorio");
   if (!toast || !msg) return;
-  
   msg.textContent = mensagem;
   toast.className = `toast-notification visible ${tipo}`;
   setTimeout(() => {
@@ -510,3 +533,19 @@ function mostrarToast(container, mensagem, tipo = "sucesso") {
   }, 4000);
 }
 
+// ========= UTILS =========
+function habilitarBotoesExportacao(container, habilitar) {
+  ["#btn-exportar-pdf", "#btn-exportar-excel", "#btn-imprimir"].forEach(sel => {
+    const btn = container.querySelector(sel);
+    if (btn) btn.disabled = !habilitar;
+  });
+}
+
+// ========= AUTO-INIT (garante que os eventos existam sem alterar visual) =========
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.querySelector('.relatorio-container');
+  if (container) init(container);
+});
+
+// Exporta dadosRelatorio se outro módulo quiser ler
+export { dadosRelatorio };
