@@ -1,5 +1,7 @@
 // js/relatorio.js — Sistema de Relatórios COM FILTRO DE DISTRITO + Impressão simples (NOMES EM CAPSLOCK)
-import { db, auth } from './firebase-config.js';
+// ✅ Agora usa banco dinâmico (2025/2026) via getDB()
+
+import { getDB, getAuthInst } from './firebase-config.js';
 import {
   collection,
   getDocs,
@@ -29,6 +31,10 @@ function upperize(str){
 // ========= INIT =========
 export function init(container, userRole = 'admin') {
   console.log("✅ Relatórios (nomes em CAPSLOCK) + Filtro de Distrito + Impressão");
+
+  // ✅ Se você quiser usar auth depois, já fica pronto:
+  const auth = getAuthInst();
+
   const btnGerarRelatorio = container.querySelector("#btn-gerar-relatorio");
   const btnExportarPdf    = container.querySelector("#btn-exportar-pdf");
   const btnExportarExcel  = container.querySelector("#btn-exportar-excel");
@@ -79,6 +85,9 @@ async function carregarDadosIniciais(container) {
 
   try {
     statusCarregamento.textContent = "Carregando oficinas...";
+
+    // ✅ pega o DB do ano ativo (2025/2026)
+    const db = getDB();
 
     const snapshot = await getDocs(collection(db, "matriculas"));
     const oficinasSet = new Set();
@@ -153,6 +162,9 @@ async function gerarRelatorio(container) {
 
 // ========= BUSCAS NO FIRESTORE =========
 async function buscarDadosRelatorio(oficina, mes, ano, distrito = null) {
+  // ✅ pega o DB do ano ativo (2025/2026)
+  const db = getDB();
+
   // 1) Matriculas
   const matriculasSnap = await getDocs(collection(db, "matriculas"));
   let matriculas = matriculasSnap.docs
@@ -172,10 +184,10 @@ async function buscarDadosRelatorio(oficina, mes, ano, distrito = null) {
   dadosRelatorio.matriculas = matriculas;
 
   // 2) Frequencias
-  await buscarFrequencias(oficina, mes, ano, distrito);
+  await buscarFrequencias(db, oficina, mes, ano, distrito);
 
   // 3) Planos de aula
-  await buscarPlanosDeAula(oficina, mes, ano, distrito);
+  await buscarPlanosDeAula(db, oficina, mes, ano, distrito);
 
   // Capturar professor do plano mais recente (se existir) — em CAPS
   const planoMaisRecente = dadosRelatorio.planosDeAula[0];
@@ -185,7 +197,7 @@ async function buscarDadosRelatorio(oficina, mes, ano, distrito = null) {
   }
 }
 
-async function buscarFrequencias(oficina, mes, ano, distrito = null) {
+async function buscarFrequencias(db, oficina, mes, ano, distrito = null) {
   const frequenciasSnap = await getDocs(collection(db, "frequencias"));
   const lista = [];
   const oficinaSan = sanitizarNomeOficina(oficina);
@@ -236,7 +248,7 @@ async function buscarFrequencias(oficina, mes, ano, distrito = null) {
   dadosRelatorio.frequencias = lista;
 }
 
-async function buscarPlanosDeAula(oficina, mes, ano, distrito = null) {
+async function buscarPlanosDeAula(db, oficina, mes, ano, distrito = null) {
   const planosSnap = await getDocs(collection(db, "planosDeAula"));
   const planos = [];
 
@@ -290,18 +302,15 @@ function atualizarEstatisticasGerais(container) {
   let totalRegistros = 0;
 
   dadosRelatorio.frequencias.forEach(freq => {
-    // Array de alunos
     if (Array.isArray(freq.alunos)) {
       freq.alunos.forEach(aluno => {
         if (aluno?.status != null) {
           totalRegistros++;
-          if (String(aluno.status).toLowerCase() === 'presente' || String(aluno.status).toLowerCase() === 'p' || aluno.status === true) {
-            totalPresencas++;
-          }
+          const s = String(aluno.status).toLowerCase();
+          if (s === 'presente' || s === 'p' || aluno.status === true) totalPresencas++;
         }
       });
     }
-    // Objeto presencas
     else if (freq.presencas && typeof freq.presencas === 'object') {
       Object.values(freq.presencas).forEach(presente => {
         totalRegistros++;
@@ -309,7 +318,6 @@ function atualizarEstatisticasGerais(container) {
         if (presente === true || s === 'presente' || s === 'p') totalPresencas++;
       });
     }
-    // Status direto
     else if (freq.status) {
       totalRegistros++;
       const s = String(freq.status).toLowerCase();
@@ -334,70 +342,55 @@ function renderizarTabelaFrequencia(container) {
     return;
   }
 
-  // Inicializa estatísticas para cada aluno matriculado (chave = nome CAPS)
   const estatisticas = {};
   dadosRelatorio.matriculas.forEach(matricula => {
     const key = upperize(matricula.nome || "");
     estatisticas[key] = { presencas: 0, faltas: 0, total: 0 };
   });
 
-  // Processa cada registro de frequência
   dadosRelatorio.frequencias.forEach(freq => {
-    // Array de alunos
     if (Array.isArray(freq.alunos)) {
       freq.alunos.forEach(aluno => {
         const key = upperize(aluno?.nome?.trim() || "");
         if (key && estatisticas[key]) {
           estatisticas[key].total++;
           const s = String(aluno.status || '').toLowerCase();
-          if (s === 'presente' || s === 'p' || aluno.status === true) {
-            estatisticas[key].presencas++;
-          } else {
-            estatisticas[key].faltas++;
-          }
+          if (s === 'presente' || s === 'p' || aluno.status === true) estatisticas[key].presencas++;
+          else estatisticas[key].faltas++;
         }
       });
     }
-    // Objeto presencas (chaves são nomes)
     else if (freq.presencas && typeof freq.presencas === 'object') {
       Object.entries(freq.presencas).forEach(([nome, presente]) => {
         const key = upperize(String(nome || '').trim());
         if (estatisticas[key]) {
           estatisticas[key].total++;
           const s = String(presente).toLowerCase();
-          if (presente === true || s === 'presente' || s === 'p') {
-            estatisticas[key].presencas++;
-          } else {
-            estatisticas[key].faltas++;
-          }
+          if (presente === true || s === 'presente' || s === 'p') estatisticas[key].presencas++;
+          else estatisticas[key].faltas++;
         }
       });
     }
-    // Status direto (um aluno por registro)
     else if (freq.alunoNome && freq.status != null) {
       const key = upperize(freq.alunoNome);
       if (estatisticas[key]) {
         estatisticas[key].total++;
         const s = String(freq.status).toLowerCase();
-        if (s === 'presente' || s === 'p' || freq.status === true) {
-          estatisticas[key].presencas++;
-        } else {
-          estatisticas[key].faltas++;
-        }
+        if (s === 'presente' || s === 'p' || freq.status === true) estatisticas[key].presencas++;
+        else estatisticas[key].faltas++;
       }
     }
   });
 
-  // Renderiza a tabela (ordenada por nome CAPS)
   const entriesOrdenadas = Object.entries(estatisticas)
     .sort((a,b)=>a[0].localeCompare(b[0], "pt-BR", {sensitivity:"base"}));
 
   corpo.innerHTML = "";
   entriesOrdenadas.forEach(([nomeCaps, stats]) => {
     const percentual = stats.total > 0 ? (stats.presencas / stats.total) * 100 : 0;
-    const classeFrequencia = percentual >= 80 ? "frequencia-alta" : 
-                           percentual >= 60 ? "frequencia-media" : "frequencia-baixa";
-    
+    const classeFrequencia = percentual >= 80 ? "frequencia-alta" :
+                             percentual >= 60 ? "frequencia-media" : "frequencia-baixa";
+
     const linha = document.createElement("tr");
     linha.innerHTML = `
       <td>${nomeCaps}</td>
@@ -413,7 +406,7 @@ function renderizarTabelaFrequencia(container) {
 
 function renderizarListaAulas(container) {
   const lista = container.querySelector("#lista-aulas");
-  
+
   if (!dadosRelatorio.planosDeAula.length) {
     lista.innerHTML = '<p class="sem-dados">Nenhum plano de aula registrado para esta oficina no período selecionado.</p>';
     return;
@@ -421,12 +414,12 @@ function renderizarListaAulas(container) {
 
   lista.innerHTML = "";
   dadosRelatorio.planosDeAula.forEach(plano => {
-    const dataAula = plano.data ? 
-      (plano.data.toDate ? plano.data.toDate() : new Date(plano.data)) : 
+    const dataAula = plano.data ?
+      (plano.data.toDate ? plano.data.toDate() : new Date(plano.data)) :
       new Date();
 
     const profCaps = upperize(plano.professor || plano.nomeProfessor || "Professor não informado");
-    
+
     const div = document.createElement("div");
     div.className = "aula-item";
     div.innerHTML = `
@@ -448,7 +441,7 @@ function exportarExcel(container) {
   mostrarToast(container, "Funcionalidade de exportação Excel em desenvolvimento.");
 }
 
-// ========= IMPRESSÃO (IMPRIME A TABELA QUE JÁ ESTÁ NA TELA) =========
+// ========= IMPRESSÃO =========
 function imprimirRelatorio(container) {
   const tabela = container.querySelector('#tabela-frequencia-individual');
   if (!tabela) {
@@ -456,10 +449,8 @@ function imprimirRelatorio(container) {
     return;
   }
 
-  // Clona a tabela exibida
   const tabelaClone = tabela.cloneNode(true);
 
-  // Contexto (só para um título simples na impressão)
   const ctx = dadosRelatorio?.contexto || {};
   const nomeMes = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][ctx.mes || 0] || "";
   const tituloHTML = `
@@ -473,7 +464,6 @@ function imprimirRelatorio(container) {
     </div>
   `;
 
-  // Cria overlay temporário
   const overlay = document.createElement('div');
   overlay.id = 'print-only';
   overlay.innerHTML = tituloHTML;
@@ -483,7 +473,6 @@ function imprimirRelatorio(container) {
   wrap.appendChild(tabelaClone);
   overlay.appendChild(wrap);
 
-  // Estilos para imprimir apenas o overlay (e garantir thead repetindo)
   const style = document.createElement('style');
   style.id = 'print-only-style';
   style.textContent = `
@@ -504,7 +493,6 @@ function imprimirRelatorio(container) {
     }
   `;
 
-  // Injeta e imprime
   document.head.appendChild(style);
   document.body.appendChild(overlay);
 
@@ -516,10 +504,8 @@ function imprimirRelatorio(container) {
 
   window.addEventListener('afterprint', cleanup);
   window.print();
-  // fallback caso afterprint não dispare
   setTimeout(() => { try { cleanup(); } catch(e){} }, 1200);
 }
-
 
 // ========= TOAST =========
 function mostrarToast(container, mensagem, tipo = "sucesso") {
@@ -541,7 +527,7 @@ function habilitarBotoesExportacao(container, habilitar) {
   });
 }
 
-// ========= AUTO-INIT (garante que os eventos existam sem alterar visual) =========
+// ========= AUTO-INIT =========
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.querySelector('.relatorio-container');
   if (container) init(container);
