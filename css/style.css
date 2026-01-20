@@ -386,4 +386,61 @@ body {
   border-radius: 12px;
   appearance: none;
 }
+/* ==========================
+   Ano letivo (duas bolinhas)
+   ========================== */
+
+.ano-radio {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.ano-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.6);
+  cursor: pointer;
+  user-select: none;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+
+.ano-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+  border-color: rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.85);
+}
+
+.ano-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ano-option .dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+.ano-option .dot::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform .12s ease;
+  background: #111; /* cor do*
+
 
