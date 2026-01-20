@@ -1,6 +1,6 @@
-// js/frequencia_adm.js (VERSÃO COM IMPRESSÃO SECULT INTEGRADA)
-import { db } from './firebase-config.js';
-import { collection, getDocs, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// js/frequencia_adm.js (VERSÃO COM IMPRESSÃO SECULT INTEGRADA) ✅ multi-banco
+import { getDB } from './firebase-config.js';
+import { collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { mostrarNotificacao } from './notificacao.js';
 
 // --- Variáveis de escopo do módulo ---
@@ -9,47 +9,46 @@ let corpoTabela, filtroData, filtroOficina, filtroProfessor;
 let modalVisualizar, modalTitulo, modalSubtitulo, modalConteudo, modalFechar;
 
 /**
- * Converte um objeto Timestamp do Firebase ou uma string de data para uma data legível.
- * @param {object|string} dataFirebase - O valor do campo de data do Firebase.
- * @returns {string} - A data formatada como DD/MM/YYYY.
+ * Converte um Timestamp do Firebase ou string de data para DD/MM/YYYY.
  */
-function formatarData(dataFirebase ) {
+function formatarData(dataFirebase) {
   if (!dataFirebase) return "N/A";
-  
-  // Verifica se é um objeto Timestamp do Firebase
+
+  // Timestamp Firestore (v10 geralmente vem com toDate)
+  if (dataFirebase.toDate) {
+    const data = dataFirebase.toDate();
+    return data.toLocaleDateString('pt-BR');
+  }
+
+  // Timestamp "cru" (seconds)
   if (dataFirebase.seconds) {
     const data = new Date(dataFirebase.seconds * 1000);
-    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    return data.toLocaleDateString('pt-BR');
   }
-  
-  // Se já for uma string (formato antigo), apenas retorna
-  if (typeof dataFirebase === 'string') {
-    return dataFirebase;
-  }
+
+  // string antiga
+  if (typeof dataFirebase === 'string') return dataFirebase;
 
   return "Data inválida";
 }
 
-/**
- * Converte um objeto Timestamp ou string para um objeto Date para ordenação.
- * @param {object|string} dataFirebase - O valor do campo de data.
- * @returns {Date}
- */
 function converterParaDate(dataFirebase) {
-    if (!dataFirebase) return null;
-    if (dataFirebase.seconds) {
-        return new Date(dataFirebase.seconds * 1000);
-    }
-    if (typeof dataFirebase === 'string') {
-        const partes = dataFirebase.split('/');
-        if (partes.length === 3) return new Date(partes[2], partes[1] - 1, partes[0]);
-    }
-    return null;
+  if (!dataFirebase) return null;
+
+  if (dataFirebase.toDate) return dataFirebase.toDate();
+
+  if (dataFirebase.seconds) return new Date(dataFirebase.seconds * 1000);
+
+  if (typeof dataFirebase === 'string') {
+    const partes = dataFirebase.split('/');
+    if (partes.length === 3) return new Date(partes[2], partes[1] - 1, partes[0]);
+  }
+
+  return null;
 }
 
 /**
- * NOVA FUNÇÃO: Imprime frequência no padrão SECULT
- * @param {string} frequenciaId - ID do registro de frequência
+ * Imprime frequência no padrão SECULT
  */
 function imprimirFrequenciaSECULT(frequenciaId) {
   const registro = todosOsRegistrosAgrupados.find(r => r.id === frequenciaId);
@@ -58,357 +57,187 @@ function imprimirFrequenciaSECULT(frequenciaId) {
     return;
   }
 
-  // Cria uma nova janela para impressão
   const janelaImpressao = window.open('', '_blank', 'width=800,height=600');
-  
-  // Extrai mês e ano da data
-  const [dia, mes, ano] = registro.dataFormatada.split('/');
+
+  const [dia, mes, ano] = String(registro.dataFormatada || '').split('/');
   const meses = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
-  const mesExtenso = meses[parseInt(mes) - 1];
-  const mesAno = `${mesExtenso}/${ano}`;
+  const mesExtenso = meses[(parseInt(mes, 10) || 1) - 1] || '';
+  const mesAno = `${mesExtenso}/${ano || ''}`;
 
-  // Filtra apenas os alunos presentes
-  const alunosPresentes = registro.alunos.filter(aluno => aluno.status === 'presente');
+  const alunosPresentes = (registro.alunos || []).filter(a => String(a.status || '').toLowerCase() === 'presente');
 
-  // HTML da página de impressão
   const htmlImpressao = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frequência de Alunos - ${registro.oficina}</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 1cm;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.2;
-            color: #000;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 21cm;
-            margin: 0 auto;
-            padding: 10px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .logo-placeholder {
-            border: 2px dashed #ccc;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            background-color: #f9f9f9;
-        }
-        
-        .titulo {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        
-        .info-section {
-            margin-bottom: 15px;
-        }
-        
-        .info-row {
-            display: flex;
-            margin-bottom: 8px;
-            align-items: center;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            margin-right: 10px;
-            min-width: 120px;
-        }
-        
-        .info-value {
-            border-bottom: 1px solid #000;
-            flex: 1;
-            padding: 2px 5px;
-            min-height: 20px;
-        }
-        
-        .info-row-split {
-            display: flex;
-            margin-bottom: 8px;
-        }
-        
-        .info-half {
-            flex: 1;
-            display: flex;
-            align-items: center;
-        }
-        
-        .info-half:first-child {
-            margin-right: 20px;
-        }
-        
-        .modalidade-options {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .modalidade-option {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .checkbox {
-            width: 12px;
-            height: 12px;
-            border: 1px solid #000;
-            display: inline-block;
-        }
-        
-        .checkbox.checked::after {
-            content: 'X';
-            display: block;
-            text-align: center;
-            line-height: 10px;
-            font-size: 10px;
-        }
-        
-        .tabela-frequencia {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        
-        .tabela-frequencia th,
-        .tabela-frequencia td {
-            border: 1px solid #000;
-            padding: 8px 4px;
-            text-align: left;
-            vertical-align: top;
-        }
-        
-        .tabela-frequencia th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .col-numero {
-            width: 5%;
-            text-align: center;
-        }
-        
-        .col-nome {
-            width: 30%;
-        }
-        
-        .col-mes-ano {
-            width: 15%;
-            text-align: center;
-        }
-        
-        .col-idade {
-            width: 10%;
-            text-align: center;
-        }
-        
-        .col-conteudo {
-            width: 40%;
-        }
-        
-        .assinaturas {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .assinatura-box {
-            width: 45%;
-            text-align: center;
-        }
-        
-        .linha-assinatura {
-            border-bottom: 1px solid #000;
-            height: 40px;
-            margin-bottom: 5px;
-        }
-        
-        @media print {
-            body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            
-            .container {
-                padding: 0;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frequência de Alunos - ${registro.oficina || ''}</title>
+  <style>
+    @page { size: A4; margin: 1cm; }
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{ font-family: Arial, sans-serif; font-size:12px; line-height:1.2; color:#000; }
+    .container{ width:100%; max-width:21cm; margin:0 auto; padding:10px; }
+    .header{ text-align:center; margin-bottom:20px; }
+    .logo-placeholder{
+      border:2px dashed #ccc; height:80px; display:flex; align-items:center; justify-content:center;
+      margin-bottom:15px; background:#f9f9f9; text-align:center; padding:8px;
+    }
+    .titulo{ font-size:18px; font-weight:bold; margin-bottom:20px; }
+    .info-section{ margin-bottom:15px; }
+    .info-row{ display:flex; margin-bottom:8px; align-items:center; }
+    .info-label{ font-weight:bold; margin-right:10px; min-width:120px; }
+    .info-value{ border-bottom:1px solid #000; flex:1; padding:2px 5px; min-height:20px; }
+    .info-row-split{ display:flex; margin-bottom:8px; }
+    .info-half{ flex:1; display:flex; align-items:center; }
+    .info-half:first-child{ margin-right:20px; }
+    .modalidade-options{ display:flex; gap:15px; align-items:center; }
+    .modalidade-option{ display:flex; align-items:center; gap:5px; }
+    .checkbox{ width:12px; height:12px; border:1px solid #000; display:inline-block; }
+    .checkbox.checked::after{ content:'X'; display:block; text-align:center; line-height:10px; font-size:10px; }
+    .tabela-frequencia{ width:100%; border-collapse:collapse; margin:20px 0; }
+    .tabela-frequencia th, .tabela-frequencia td{ border:1px solid #000; padding:8px 4px; text-align:left; vertical-align:top; }
+    .tabela-frequencia th{ background:#f0f0f0; font-weight:bold; text-align:center; }
+    .col-numero{ width:5%; text-align:center; }
+    .col-nome{ width:30%; }
+    .col-mes-ano{ width:15%; text-align:center; }
+    .col-idade{ width:10%; text-align:center; }
+    .col-conteudo{ width:40%; }
+    .assinaturas{ margin-top:40px; display:flex; justify-content:space-between; }
+    .assinatura-box{ width:45%; text-align:center; }
+    .linha-assinatura{ border-bottom:1px solid #000; height:40px; margin-bottom:5px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header com Logo -->
-        <div class="header">
-            <div class="logo-placeholder">
-                LOGOMARCA DO PROJETO  
-
-                <small>(clicar 2x para editar)</small>
-            </div>
-            <div class="titulo">FREQUÊNCIA DE ALUNOS</div>
-        </div>
-        
-        <!-- Informações do Curso -->
-        <div class="info-section">
-            <div class="info-row">
-                <span class="info-label">INSTITUIÇÃO:</span>
-                <span class="info-value">ESCOLA DE MÚSICA MADE IN SERTÃO</span>
-            </div>
-            
-            <div class="info-row">
-                <span class="info-label">PROJETO:</span>
-                <span class="info-value">MIS EDUCA</span>
-            </div>
-            
-            <div class="info-row-split">
-                <div class="info-half">
-                    <span class="info-label">CURSO:</span>
-                    <span class="info-value">${registro.oficina}</span>
-                </div>
-                <div class="info-half">
-                    <span class="info-label">CARGA HORÁRIA:</span>
-                    <span class="info-value">4h semanais</span>
-                </div>
-            </div>
-            
-            <div class="info-row-split">
-                <div class="info-half">
-                    <span class="info-label">LINGUAGEM ARTÍSTICA:</span>
-                    <span class="info-value">Música</span>
-                </div>
-                <div class="info-half">
-                    <span class="info-label">HORÁRIO:</span>
-                    <span class="info-value">Conforme cronograma</span>
-                </div>
-            </div>
-            
-            <div class="info-row">
-                <span class="info-label">MODALIDADE:</span>
-                <div class="modalidade-options">
-                    <div class="modalidade-option">
-                        <span class="checkbox checked"></span>
-                        <span>PRESENCIAL</span>
-                    </div>
-                    <div class="modalidade-option">
-                        <span class="checkbox"></span>
-                        <span>ON-LINE</span>
-                    </div>
-                    <div class="modalidade-option">
-                        <span class="checkbox"></span>
-                        <span>HÍBRIDO</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="info-row">
-                <span class="info-label">PROFESSOR:</span>
-                <span class="info-value">${registro.professor}</span>
-            </div>
-        </div>
-        
-        <!-- Tabela de Frequência -->
-        <table class="tabela-frequencia">
-            <thead>
-                <tr>
-                    <th class="col-numero">Nº</th>
-                    <th class="col-nome">NOME</th>
-                    <th class="col-mes-ano">MÊS/ANO</th>
-                    <th class="col-idade">IDADE</th>
-                    <th class="col-conteudo">CONTEÚDO PROGRAMÁTICO</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${alunosPresentes.map((aluno, index) => `
-                    <tr>
-                        <td class="col-numero">${index + 1}</td>
-                        <td class="col-nome">${aluno.nome}</td>
-                        <td class="col-mes-ano">${mesAno}</td>
-                        <td class="col-idade">-</td>
-                        <td class="col-conteudo">Prática instrumental e teoria musical</td>
-                    </tr>
-                `).join('')}
-                
-                <!-- Linhas em branco para completar a página -->
-                ${Array.from({length: Math.max(0, 15 - alunosPresentes.length)}, (_, index) => `
-                    <tr>
-                        <td class="col-numero">${alunosPresentes.length + index + 1}</td>
-                        <td class="col-nome">&nbsp;</td>
-                        <td class="col-mes-ano">&nbsp;</td>
-                        <td class="col-idade">&nbsp;</td>
-                        <td class="col-conteudo">&nbsp;</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        
-        <!-- Assinaturas -->
-        <div class="assinaturas">
-            <div class="assinatura-box">
-                <div class="linha-assinatura"></div>
-                <strong>ASSINATURA DO PROFESSOR(A)</strong>
-            </div>
-            <div class="assinatura-box">
-                <div class="linha-assinatura"></div>
-                <strong>ASSINATURA DO COORDENADOR(A) PEDAGÓGICO</strong>
-            </div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <div class="logo-placeholder">
+        LOGOMARCA DO PROJETO<br/>
+        <small>(clicar 2x para editar)</small>
+      </div>
+      <div class="titulo">FREQUÊNCIA DE ALUNOS</div>
     </div>
-    
-    <script>
-        // Auto-imprime quando a página carrega
-        window.onload = function() {
-            setTimeout(function() {
-                window.print();
-                // Fecha a janela após imprimir
-                window.onafterprint = function() {
-                    window.close();
-                };
-            }, 500);
-        };
-    </script>
+
+    <div class="info-section">
+      <div class="info-row">
+        <span class="info-label">INSTITUIÇÃO:</span>
+        <span class="info-value">ESCOLA DE MÚSICA MADE IN SERTÃO</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">PROJETO:</span>
+        <span class="info-value">MIS EDUCA</span>
+      </div>
+
+      <div class="info-row-split">
+        <div class="info-half">
+          <span class="info-label">CURSO:</span>
+          <span class="info-value">${registro.oficina || ''}</span>
+        </div>
+        <div class="info-half">
+          <span class="info-label">CARGA HORÁRIA:</span>
+          <span class="info-value">4h semanais</span>
+        </div>
+      </div>
+
+      <div class="info-row-split">
+        <div class="info-half">
+          <span class="info-label">LINGUAGEM ARTÍSTICA:</span>
+          <span class="info-value">Música</span>
+        </div>
+        <div class="info-half">
+          <span class="info-label">HORÁRIO:</span>
+          <span class="info-value">Conforme cronograma</span>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">MODALIDADE:</span>
+        <div class="modalidade-options">
+          <div class="modalidade-option"><span class="checkbox checked"></span><span>PRESENCIAL</span></div>
+          <div class="modalidade-option"><span class="checkbox"></span><span>ON-LINE</span></div>
+          <div class="modalidade-option"><span class="checkbox"></span><span>HÍBRIDO</span></div>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">PROFESSOR:</span>
+        <span class="info-value">${registro.professor || ''}</span>
+      </div>
+    </div>
+
+    <table class="tabela-frequencia">
+      <thead>
+        <tr>
+          <th class="col-numero">Nº</th>
+          <th class="col-nome">NOME</th>
+          <th class="col-mes-ano">MÊS/ANO</th>
+          <th class="col-idade">IDADE</th>
+          <th class="col-conteudo">CONTEÚDO PROGRAMÁTICO</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${alunosPresentes.map((aluno, index) => `
+          <tr>
+            <td class="col-numero">${index + 1}</td>
+            <td class="col-nome">${aluno.nome || ''}</td>
+            <td class="col-mes-ano">${mesAno}</td>
+            <td class="col-idade">-</td>
+            <td class="col-conteudo">Prática instrumental e teoria musical</td>
+          </tr>
+        `).join('')}
+
+        ${Array.from({length: Math.max(0, 15 - alunosPresentes.length)}, (_, idx) => `
+          <tr>
+            <td class="col-numero">${alunosPresentes.length + idx + 1}</td>
+            <td class="col-nome">&nbsp;</td>
+            <td class="col-mes-ano">&nbsp;</td>
+            <td class="col-idade">&nbsp;</td>
+            <td class="col-conteudo">&nbsp;</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <div class="assinaturas">
+      <div class="assinatura-box">
+        <div class="linha-assinatura"></div>
+        <strong>ASSINATURA DO PROFESSOR(A)</strong>
+      </div>
+      <div class="assinatura-box">
+        <div class="linha-assinatura"></div>
+        <strong>ASSINATURA DO COORDENADOR(A) PEDAGÓGICO</strong>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+        window.onafterprint = function() { window.close(); };
+      }, 400);
+    };
+  </script>
 </body>
 </html>`;
 
-  // Escreve o HTML na nova janela
   janelaImpressao.document.write(htmlImpressao);
   janelaImpressao.document.close();
 }
 
+// =========================
+// INIT DO MÓDULO
+// =========================
 export function init() {
-  // Atribuição de Elementos do DOM
   corpoTabela = document.getElementById("corpo-tabela-frequencias-admin");
   filtroData = document.getElementById("filtro-frequencia-data");
   filtroOficina = document.getElementById("filtro-frequencia-oficina");
   filtroProfessor = document.getElementById("filtro-frequencia-professor");
+
   modalVisualizar = document.getElementById("modal-visualizar-frequencia");
   modalTitulo = document.getElementById("modal-frequencia-titulo");
   modalSubtitulo = document.getElementById("modal-frequencia-subtitulo");
@@ -420,18 +249,29 @@ export function init() {
     return;
   }
 
+  // ✅ força habilitar selects (muito útil quando CSS/HTML deixa disabled)
+  if (filtroOficina) filtroOficina.disabled = false;
+  if (filtroProfessor) filtroProfessor.disabled = false;
+
   adicionarEventListeners();
+
+  // Estado inicial dos filtros
+  if (filtroOficina) filtroOficina.innerHTML = `<option value="">Carregando...</option>`;
+  if (filtroProfessor) filtroProfessor.value = '';
+
   carregarFrequencias();
 }
 
 async function carregarFrequencias() {
-  corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando...</td></tr>`;
+  corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center;">Carregando...</td></tr>`;
+
   try {
+    const db = getDB();
     const querySnapshot = await getDocs(collection(db, "frequencias"));
     const registrosAgrupados = {};
 
-    querySnapshot.forEach(doc => {
-      const dados = doc.data();
+    querySnapshot.forEach(docSnap => {
+      const dados = docSnap.data() || {};
       const dataFormatada = formatarData(dados.data);
       const oficina = dados.oficina;
 
@@ -441,49 +281,59 @@ async function carregarFrequencias() {
           registrosAgrupados[chave] = {
             id: chave,
             data: dados.data,
-            dataFormatada: dataFormatada,
-            oficina: oficina,
+            dataFormatada,
+            oficina,
             professor: dados.professor || "N/A",
             alunos: [],
             docsIds: []
           };
         }
-        if (dados.alunos) {
-            registrosAgrupados[chave].alunos.push(...dados.alunos);
+
+        if (Array.isArray(dados.alunos)) {
+          registrosAgrupados[chave].alunos.push(...dados.alunos);
         }
-        registrosAgrupados[chave].docsIds.push(doc.id);
+
+        registrosAgrupados[chave].docsIds.push(docSnap.id);
       }
     });
 
     todosOsRegistrosAgrupados = Object.values(registrosAgrupados);
-    todosOsRegistrosAgrupados.sort((a, b) => converterParaDate(b.data) - converterParaDate(a.data));
-    
+
+    // ordena por data desc
+    todosOsRegistrosAgrupados.sort((a, b) => {
+      const da = converterParaDate(a.data);
+      const dbb = converterParaDate(b.data);
+      return (dbb ? dbb.getTime() : 0) - (da ? da.getTime() : 0);
+    });
+
     renderizarTabela(todosOsRegistrosAgrupados);
     carregarOpcoesFiltros(todosOsRegistrosAgrupados);
 
   } catch (error) {
     console.error("Erro ao buscar e agrupar frequências:", error);
-    corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Erro ao carregar.</td></tr>`;
+    corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">Erro ao carregar.</td></tr>`;
   }
 }
 
 function renderizarTabela(registros) {
   corpoTabela.innerHTML = "";
-  if (registros.length === 0) {
-    corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhuma aula com frequência registrada.</td></tr>`;
+
+  if (!registros || registros.length === 0) {
+    corpoTabela.innerHTML = `<tr><td colspan="6" style="text-align:center;">Nenhuma aula com frequência registrada.</td></tr>`;
     return;
   }
 
   registros.forEach(reg => {
-    const presentes = reg.alunos.filter(aluno => aluno.status === 'presente').length;
-    const faltas = reg.alunos.filter(aluno => aluno.status === 'falta').length;
+    const alunos = Array.isArray(reg.alunos) ? reg.alunos : [];
+    const presentes = alunos.filter(a => String(a.status || '').toLowerCase() === 'presente').length;
+    const faltas = alunos.filter(a => String(a.status || '').toLowerCase() === 'falta').length;
 
     const tr = document.createElement("tr");
-    tr.dataset.frequenciaId = reg.id; 
+    tr.dataset.frequenciaId = reg.id;
     tr.innerHTML = `
-      <td>${reg.dataFormatada}</td>
-      <td>${reg.oficina}</td>
-      <td>${reg.professor}</td>
+      <td>${reg.dataFormatada || ''}</td>
+      <td>${reg.oficina || ''}</td>
+      <td>${reg.professor || ''}</td>
       <td><span style="color: var(--verde-sucesso); font-weight: bold;">${presentes}</span></td>
       <td><span style="color: var(--vermelho-perigo); font-weight: bold;">${faltas}</span></td>
       <td class="actions">
@@ -498,24 +348,40 @@ function renderizarTabela(registros) {
 }
 
 function carregarOpcoesFiltros(registros) {
-  const oficinas = [...new Set(registros.map(r => r.oficina))].sort();
-  filtroOficina.innerHTML = `<option value="">Todas</option>`;
-  oficinas.forEach(oficina => {
-    filtroOficina.innerHTML += `<option value="${oficina}">${oficina}</option>`;
-  });
+  // ✅ OFICINAS
+  const oficinas = [...new Set((registros || []).map(r => r.oficina).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+  if (filtroOficina) {
+    filtroOficina.disabled = false;
+    filtroOficina.innerHTML = `<option value="">Todas</option>` + oficinas.map(o => `<option value="${o}">${o}</option>`).join('');
+    console.log("✅ Filtro de oficinas carregado:", oficinas.length);
+  }
+
+  // ✅ PROFESSORES (opcional, mas ajuda muito)
+  const profs = [...new Set((registros || []).map(r => r.professor).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+  // se for input, mantém; se for select, você pode trocar no HTML depois
+  // aqui só garante que não esteja travado
+  if (filtroProfessor) {
+    filtroProfessor.disabled = false;
+    console.log("✅ Lista de professores detectada:", profs.length);
+  }
 }
 
 function aplicarFiltros() {
-  const dataSelecionada = filtroData.value;
-  const oficinaSelecionada = filtroOficina.value;
-  const professorDigitado = filtroProfessor.value.toLowerCase();
+  const dataSelecionada = filtroData ? filtroData.value : "";
+  const oficinaSelecionada = filtroOficina ? filtroOficina.value : "";
+  const professorDigitado = (filtroProfessor ? filtroProfessor.value : "").toLowerCase().trim();
 
-  const registrosFiltrados = todosOsRegistrosAgrupados.filter(reg => {
-    let dataFiltroFormatada = '';
-    if (dataSelecionada) {
-        const [ano, mes, dia] = dataSelecionada.split('-');
-        dataFiltroFormatada = `${dia}/${mes}/${ano}`;
-    }
+  let dataFiltroFormatada = '';
+  if (dataSelecionada) {
+    const [ano, mes, dia] = dataSelecionada.split('-');
+    dataFiltroFormatada = `${dia}/${mes}/${ano}`;
+  }
+
+  const registrosFiltrados = (todosOsRegistrosAgrupados || []).filter(reg => {
     const matchData = !dataSelecionada || reg.dataFormatada === dataFiltroFormatada;
     const matchOficina = !oficinaSelecionada || reg.oficina === oficinaSelecionada;
     const matchProfessor = !professorDigitado || (reg.professor && reg.professor.toLowerCase().includes(professorDigitado));
@@ -532,18 +398,21 @@ function abrirModalVisualizar(frequenciaId) {
     return;
   }
 
-  modalTitulo.textContent = `Frequência de ${registro.oficina}`;
-  modalSubtitulo.textContent = `Data: ${registro.dataFormatada} | Professor: ${registro.professor}`;
+  modalTitulo.textContent = `Frequência de ${registro.oficina || ''}`;
+  modalSubtitulo.textContent = `Data: ${registro.dataFormatada || ''} | Professor: ${registro.professor || ''}`;
   modalConteudo.innerHTML = '<p>Carregando...</p>';
   modalVisualizar.style.display = "flex";
 
-  const alunos = registro.alunos.sort((a, b) => a.nome.localeCompare(b.nome));
+  const alunos = Array.isArray(registro.alunos) ? registro.alunos.slice() : [];
+  alunos.sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR', { sensitivity: 'base' }));
+
   if (alunos.length > 0) {
     let htmlAlunos = '<ul>';
     alunos.forEach(aluno => {
-      const statusClass = aluno.status === 'presente' ? 'status-presente' : 'status-falta';
-      const statusText = aluno.status === 'presente' ? 'Presente' : 'Falta';
-      htmlAlunos += `<li>${aluno.nome} - <span class="${statusClass}">${statusText}</span></li>`;
+      const st = String(aluno.status || '').toLowerCase();
+      const statusClass = st === 'presente' ? 'status-presente' : 'status-falta';
+      const statusText = st === 'presente' ? 'Presente' : 'Falta';
+      htmlAlunos += `<li>${aluno.nome || ''} - <span class="${statusClass}">${statusText}</span></li>`;
     });
     htmlAlunos += '</ul>';
     modalConteudo.innerHTML = htmlAlunos;
@@ -553,21 +422,24 @@ function abrirModalVisualizar(frequenciaId) {
 }
 
 async function excluirRegistroDeAula(frequenciaId) {
-    const registro = todosOsRegistrosAgrupados.find(r => r.id === frequenciaId);
-    if (!confirm(`Tem certeza que deseja excluir TODOS os registros de frequência da oficina "${registro.oficina}" do dia ${registro.dataFormatada}?`)) {
-        return;
-    }
+  const registro = todosOsRegistrosAgrupados.find(r => r.id === frequenciaId);
+  if (!registro) return;
 
-    try {
-        for (const docId of registro.docsIds) {
-            await deleteDoc(doc(db, "frequencias", docId));
-        }
-        mostrarNotificacao("Registros de frequência da aula excluídos com sucesso!", "sucesso");
-        carregarFrequencias();
-    } catch (error) {
-        console.error("Erro ao excluir registros da aula:", error);
-        mostrarNotificacao("Ocorreu um erro ao excluir os registros. Verifique as permissões do banco de dados.", "erro");
+  if (!confirm(`Tem certeza que deseja excluir TODOS os registros de frequência da oficina "${registro.oficina}" do dia ${registro.dataFormatada}?`)) {
+    return;
+  }
+
+  try {
+    const db = getDB();
+    for (const docId of (registro.docsIds || [])) {
+      await deleteDoc(doc(db, "frequencias", docId));
     }
+    mostrarNotificacao("Registros de frequência da aula excluídos com sucesso!", "sucesso");
+    carregarFrequencias();
+  } catch (error) {
+    console.error("Erro ao excluir registros da aula:", error);
+    mostrarNotificacao("Ocorreu um erro ao excluir os registros. Verifique as permissões do banco de dados.", "erro");
+  }
 }
 
 function fecharModalVisualizar() {
@@ -575,31 +447,36 @@ function fecharModalVisualizar() {
 }
 
 function adicionarEventListeners() {
-  filtroData.addEventListener('change', aplicarFiltros);
-  filtroOficina.addEventListener('change', aplicarFiltros);
-  filtroProfessor.addEventListener('input', aplicarFiltros);
+  if (filtroData) filtroData.addEventListener('change', aplicarFiltros);
+  if (filtroOficina) filtroOficina.addEventListener('change', aplicarFiltros);
+  if (filtroProfessor) filtroProfessor.addEventListener('input', aplicarFiltros);
 
-  corpoTabela.addEventListener('click', (event) => {
-    const target = event.target.closest('a');
-    if (!target) return;
-    event.preventDefault();
-    const frequenciaId = target.closest('tr').dataset.frequenciaId;
-    if (!frequenciaId) return;
+  if (corpoTabela) {
+    corpoTabela.addEventListener('click', (event) => {
+      const target = event.target.closest('a');
+      if (!target) return;
+      event.preventDefault();
 
-    if (target.classList.contains('acao-visualizar')) {
-      abrirModalVisualizar(frequenciaId);
-    } else if (target.classList.contains('acao-excluir')) {
-      excluirRegistroDeAula(frequenciaId);
-    } else if (target.classList.contains('acao-editar')) {
-      mostrarNotificacao("A função de editar será implementada em breve!", "erro");
-    } else if (target.classList.contains('acao-imprimir')) {
-      // NOVA FUNCIONALIDADE: Impressão no padrão SECULT
-      imprimirFrequenciaSECULT(frequenciaId);
-    }
-  });
+      const tr = target.closest('tr');
+      const frequenciaId = tr ? tr.dataset.frequenciaId : null;
+      if (!frequenciaId) return;
 
-  modalFechar.addEventListener('click', fecharModalVisualizar);
-  modalVisualizar.addEventListener('click', (e) => {
-    if (e.target === modalVisualizar) fecharModalVisualizar();
-  });
+      if (target.classList.contains('acao-visualizar')) {
+        abrirModalVisualizar(frequenciaId);
+      } else if (target.classList.contains('acao-excluir')) {
+        excluirRegistroDeAula(frequenciaId);
+      } else if (target.classList.contains('acao-editar')) {
+        mostrarNotificacao("A função de editar será implementada em breve!", "erro");
+      } else if (target.classList.contains('acao-imprimir')) {
+        imprimirFrequenciaSECULT(frequenciaId);
+      }
+    });
+  }
+
+  if (modalFechar) modalFechar.addEventListener('click', fecharModalVisualizar);
+  if (modalVisualizar) {
+    modalVisualizar.addEventListener('click', (e) => {
+      if (e.target === modalVisualizar) fecharModalVisualizar();
+    });
+  }
 }
