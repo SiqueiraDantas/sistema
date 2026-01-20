@@ -387,7 +387,7 @@ body {
   appearance: none;
 }
 /* ==========================
-   Ano letivo (duas bolinhas)
+   Ano letivo (duas bolinhas) - FIX CLIQUE
    ========================== */
 
 .ano-radio {
@@ -397,6 +397,7 @@ body {
 }
 
 .ano-option {
+  position: relative;              /* ✅ importante */
   flex: 1;
   display: flex;
   align-items: center;
@@ -417,10 +418,21 @@ body {
   background: rgba(255,255,255,0.85);
 }
 
+/* ✅ o input vira a camada clicável por cima do card */
 .ano-option input {
   position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  inset: 0;              /* cobre todo o label */
+  opacity: 0;            /* invisível */
+  cursor: pointer;       /* cursor de clique */
+  z-index: 2;            /* fica acima */
+  margin: 0;
+}
+
+/* elementos visuais ficam abaixo do input */
+.ano-option .dot,
+.ano-option .text {
+  position: relative;
+  z-index: 1;
 }
 
 .ano-option .dot {
@@ -441,6 +453,24 @@ body {
   border-radius: 50%;
   transform: scale(0);
   transition: transform .12s ease;
-  background: #111; /* cor do*
+  background: #111;
+}
 
+.ano-option .text {
+  font-weight: 600;
+  letter-spacing: .2px;
+}
 
+/* Estado selecionado */
+.ano-option input:checked + .dot {
+  border-color: rgba(0,0,0,0.75);
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.06);
+}
+
+.ano-option input:checked + .dot::after {
+  transform: scale(1);
+}
+
+@media (max-width: 520px) {
+  .ano-radio { flex-direction: column; }
+}
