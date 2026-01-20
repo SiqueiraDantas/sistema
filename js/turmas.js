@@ -1,7 +1,7 @@
 // js/turmas.js — PROFESSOR (somente leitura)
 // Removeu: coluna Ações, modal e lógica de edição
 
-import { db } from './firebase-config.js';
+import { getDB } from './firebase-config.js';
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let todosOsAlunos = [];
@@ -42,8 +42,13 @@ async function carregarDadosIniciais(container) {
   if (corpoTabelaTurmas) {
     corpoTabelaTurmas.innerHTML = '<tr><td colspan="3">Carregando dados...</td></tr>';
   }
+
   try {
+    // ✅ pega o Firestore do ano ativo (2025/2026)
+    const db = getDB();
+
     const snapshot = await getDocs(collection(db, "matriculas"));
+
     // cria campo derivado _nomeCaps para exibição/ordenção/pesquisa
     todosOsAlunos = snapshot.docs.map(d => {
       const data = { id: d.id, ...d.data() };
