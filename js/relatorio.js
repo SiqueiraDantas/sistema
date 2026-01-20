@@ -1,17 +1,18 @@
 // js/relatorio.js — Sistema de Relatórios COM FILTRO DE DISTRITO + Impressão simples (NOMES EM CAPSLOCK)
 // ✅ Agora usa banco dinâmico (2025/2026) via getDB()
+// ✅ Garante ano 2025/2026 no select + auto-seleciona ano ativo
 
-import { getDB, getAuthInst } from './firebase-config.js';
+import { getDB, getAuthInst, getAnoAtivo } from './firebase-config.js';
 import {
   collection,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let dadosRelatorio = {
-  frequencias: [],    // registros por data
-  planosDeAula: [],   // planos do mês
-  matriculas: [],     // alunos matriculados na oficina (com _nomeCaps)
-  contexto: {         // usado para título da impressão
+  frequencias: [],
+  planosDeAula: [],
+  matriculas: [],
+  contexto: {
     oficina: "",
     mes: 0,
     ano: 0,
@@ -28,12 +29,74 @@ function upperize(str){
   return String(str || "").normalize("NFC").toLocaleUpperCase("pt-BR");
 }
 
+/* =======================
+   Ano ativo (fallback)
+   ======================= */
+function anoAtivoSeguro() {
+  try {
+    if (typeof getAnoAtivo === "function") return String(getAnoAtivo() || "");
+  } catch (e) {}
+  // fallback caso getAnoAtivo não exista
+  const ls = localStorage.getItem("anoLetivo") || localStorage.getItem("ano_letivo") || "";
+  return String(ls || "");
+}
+
+/* =======================
+   Garante opções 2025/2026 no select + seleciona ano ativo
+   ======================= */
+function garantirAnoLetivoNoSelect(container) {
+  const selectAno = container.querySelector("#ano-relatorio");
+  if (!selectAno) return;
+
+  const opcoesExistentes = Array.from(selectAno.options).map(o => String(o.value));
+  const precisa2025 = !opcoesExistentes.includes("2025");
+  const precisa2026 = !opcoesExistentes.includes("2026");
+
+  if (precisa2025) {
+    const op = document.createElement("option");
+    op.value = "2025";
+    op.textContent = "2025";
+    selectAno.appendChild(op);
+  }
+  if (precisa2026) {
+    const op = document.createElement("option");
+    op.value = "2026";
+    op.textContent = "2026";
+    selectAno.appendChild(op);
+  }
+
+  // Seleciona o ano ativo, se houver
+  const anoAtivo = anoAtivoSeguro();
+  if (anoAtivo === "2025" || anoAtivo === "2026") {
+    selectAno.value = anoAtivo;
+  }
+
+  // Se continuar vazio, tenta padrão
+  if (!selectAno.value) {
+    selectAno.value = "2026"; // padrão recomendado
+  }
+}
+
 // ========= INIT =========
 export function init(container, userRole = 'admin') {
-  console.log("✅ Relatórios (nomes em CAPSLOCK) + Filtro de Distrito + Impressão");
+  console.log("✅ Relatórios (CAPSLOCK) + Filtro de Distrito + Impressão");
+  if (!container) {
+    console.error("❌ Container do relatório não encontrado.");
+    return;
+  }
 
-  // ✅ Se você quiser usar auth depois, já fica pronto:
+  // auth pronto (caso use depois)
   const auth = getAuthInst();
+
+  // ✅ garante select do ano preparado (2025/2026 + ano ativo)
+  garantirAnoLetivoNoSelect(container);
+
+  // Debug útil:
+  try {
+    const db = getDB();
+    console.log("🧠 Ano ativo:", anoAtivoSeguro());
+    console.log("🧠 DB ativo projectId:", db?.app?.options?.projectId || "(desconhecido)");
+  } catch (e) {}
 
   const btnGerarRelatorio = container.querySelector("#btn-gerar-relatorio");
   const btnExportarPdf    = container.querySelector("#btn-exportar-pdf");
@@ -48,6 +111,13 @@ export function init(container, userRole = 'admin') {
   const selectOficina = container.querySelector("#oficina-relatorio");
   selectOficina?.addEventListener("change", () => handleOficinaChange(container));
 
+  // ✅ quando trocar o ano no select, recarrega oficinas (pra refletir o banco certo)
+  const selectAno = container.querySelector("#ano-relatorio");
+  selectAno?.addEventListener("change", () => {
+    // Só recarrega a lista de oficinas. O relatório só gera ao clicar.
+    carregarDadosIniciais(container);
+  });
+
   carregarDadosIniciais(container);
 }
 
@@ -56,6 +126,7 @@ function handleOficinaChange(container) {
   const selectOficina = container.querySelector("#oficina-relatorio");
   const filtroDistritoContainer = container.querySelector("#filtro-distrito-relatorio");
   const selectDistrito = container.querySelector("#distrito-relatorio");
+  if (!selectOficina || !filtroDistritoContainer || !selectDistrito) return;
 
   const oficina = selectOficina.value;
   if (oficina === "Percussão/Fanfarra") {
@@ -75,31 +146,36 @@ function determinarDistrito(bairroAluno) {
 
 // remove "/"
 function sanitizarNomeOficina(nomeOficina) {
-  return nomeOficina.replace(/\//g, '_');
+  return String(nomeOficina || "").replace(/\//g, '_');
 }
 
 // ========= CARREGAR OFICINAS =========
 async function carregarDadosIniciais(container) {
   const selectOficina = container.querySelector("#oficina-relatorio");
   const statusCarregamento = container.querySelector("#status-carregamento");
+  if (!selectOficina || !statusCarregamento) return;
 
   try {
     statusCarregamento.textContent = "Carregando oficinas...";
 
-    // ✅ pega o DB do ano ativo (2025/2026)
     const db = getDB();
 
     const snapshot = await getDocs(collection(db, "matriculas"));
     const oficinasSet = new Set();
 
     snapshot.docs.forEach(doc => {
-      const data = doc.data();
+      const data = doc.data() || {};
       if (Array.isArray(data.oficinas)) {
-        data.oficinas.forEach(o => oficinasSet.add(o));
+        data.oficinas.forEach(o => {
+          const val = String(o || "").trim();
+          if (val) oficinasSet.add(val);
+        });
       }
     });
 
-    const oficinasOrdenadas = Array.from(oficinasSet).sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
+    const oficinasOrdenadas = Array.from(oficinasSet)
+      .sort((a,b)=>a.localeCompare(b,"pt-BR",{sensitivity:"base"}));
+
     selectOficina.innerHTML = '<option value="">Selecione uma oficina</option>';
     oficinasOrdenadas.forEach(oficina => {
       const opt = document.createElement("option");
@@ -126,12 +202,16 @@ async function gerarRelatorio(container) {
   const areaResultados= container.querySelector("#area-resultados");
   const status        = container.querySelector("#status-carregamento");
 
+  if (!selectOficina || !selectMes || !selectAno || !btnGerar || !areaResultados || !status) return;
+
   const oficina  = selectOficina.value;
   const mes      = parseInt(selectMes.value, 10);
   const ano      = parseInt(selectAno.value, 10);
-  const distrito = selectDistrito.value;
+  const distrito = selectDistrito ? selectDistrito.value : "";
 
   if (!oficina) return mostrarToast(container, "Selecione uma oficina", "erro");
+  if (!mes || !ano) return mostrarToast(container, "Selecione mês e ano", "erro");
+
   if (oficina === "Percussão/Fanfarra" && !distrito) {
     return mostrarToast(container, "Selecione um distrito para Percussão/Fanfarra", "erro");
   }
@@ -162,23 +242,21 @@ async function gerarRelatorio(container) {
 
 // ========= BUSCAS NO FIRESTORE =========
 async function buscarDadosRelatorio(oficina, mes, ano, distrito = null) {
-  // ✅ pega o DB do ano ativo (2025/2026)
   const db = getDB();
 
   // 1) Matriculas
   const matriculasSnap = await getDocs(collection(db, "matriculas"));
   let matriculas = matriculasSnap.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
-    .filter(m => m.oficinas?.includes(oficina));
+    .map(doc => ({ id: doc.id, ...(doc.data() || {}) }))
+    .filter(m => Array.isArray(m.oficinas) && m.oficinas.includes(oficina));
 
   if (oficina === "Percussão/Fanfarra" && distrito) {
     matriculas = matriculas.filter(m => {
-      const bairro = m.bairro || m.escolaBairro || ""; // ajuste conforme seus campos
+      const bairro = m.bairro || m.escolaBairro || "";
       return determinarDistrito(bairro) === distrito;
     });
   }
 
-  // Deriva nome em CAPS e ordena por CAPS
   matriculas = matriculas.map(m => ({ ...m, _nomeCaps: upperize(m.nome || "") }));
   matriculas.sort((a,b) => (a._nomeCaps||"").localeCompare(b._nomeCaps||"", "pt-BR", {sensitivity:"base"}));
   dadosRelatorio.matriculas = matriculas;
@@ -189,7 +267,7 @@ async function buscarDadosRelatorio(oficina, mes, ano, distrito = null) {
   // 3) Planos de aula
   await buscarPlanosDeAula(db, oficina, mes, ano, distrito);
 
-  // Capturar professor do plano mais recente (se existir) — em CAPS
+  // Captura professor do plano mais recente
   const planoMaisRecente = dadosRelatorio.planosDeAula[0];
   if (planoMaisRecente) {
     const prof = planoMaisRecente.professor || planoMaisRecente.nomeProfessor || "";
@@ -203,15 +281,13 @@ async function buscarFrequencias(db, oficina, mes, ano, distrito = null) {
   const oficinaSan = sanitizarNomeOficina(oficina);
 
   frequenciasSnap.docs.forEach(docSnap => {
-    const data = docSnap.data();
-    const docId = docSnap.id;
+    const data = docSnap.data() || {};
+    const docId = docSnap.id || "";
 
-    // Verifica oficina
     let pertenceAOficina = false;
     if (docId.includes(oficinaSan)) pertenceAOficina = true;
     if (data.oficina === oficina) pertenceAOficina = true;
 
-    // Verifica período
     let pertenceAoPeriodo = false;
     const m = docId.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (m) {
@@ -223,27 +299,20 @@ async function buscarFrequencias(db, oficina, mes, ano, distrito = null) {
       if (d.getFullYear()===ano && (d.getMonth()+1)===mes) pertenceAoPeriodo = true;
     }
 
-    // Verifica distrito se necessário
     let pertenceAoDistrito = true;
     if (oficina === "Percussão/Fanfarra" && distrito) {
       pertenceAoDistrito = !!(docId.includes(`_${distrito}`) || data.distrito === distrito);
     }
 
     if (pertenceAOficina && pertenceAoPeriodo && pertenceAoDistrito) {
-      // Normaliza a data do registro
       let dataAula = null;
       if (data.data) dataAula = data.data.toDate ? data.data.toDate() : new Date(data.data);
       else if (m) dataAula = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00`);
 
-      lista.push({
-        id: docId,
-        dataAula,
-        ...data
-      });
+      lista.push({ id: docId, dataAula, ...data });
     }
   });
 
-  // Ordena por data
   lista.sort((a,b) => (a.dataAula?.getTime()||0) - (b.dataAula?.getTime()||0));
   dadosRelatorio.frequencias = lista;
 }
@@ -253,7 +322,7 @@ async function buscarPlanosDeAula(db, oficina, mes, ano, distrito = null) {
   const planos = [];
 
   planosSnap.docs.forEach(docSnap => {
-    const data = docSnap.data();
+    const data = docSnap.data() || {};
     if (data.oficina !== oficina) return;
 
     let noPeriodo = false;
@@ -267,9 +336,7 @@ async function buscarPlanosDeAula(db, oficina, mes, ano, distrito = null) {
       noDistrito = (data.distrito === distrito);
     }
 
-    if (noPeriodo && noDistrito) {
-      planos.push({ id: docSnap.id, ...data });
-    }
+    if (noPeriodo && noDistrito) planos.push({ id: docSnap.id, ...data });
   });
 
   planos.sort((a,b) => {
@@ -283,7 +350,7 @@ async function buscarPlanosDeAula(db, oficina, mes, ano, distrito = null) {
 
 // ========= RENDER NA TELA =========
 function renderizarRelatorio(container, oficina, mes, ano, distrito = null) {
-  console.log("🎨 Renderizando relatório (NOMES EM CAPS)...");
+  console.log("🎨 Renderizando relatório (CAPS)...");
   atualizarEstatisticasGerais(container);
   renderizarTabelaFrequencia(container);
   renderizarListaAulas(container);
@@ -293,11 +360,11 @@ function atualizarEstatisticasGerais(container) {
   const totalAlunos = container.querySelector("#total-alunos");
   const totalAulas = container.querySelector("#total-aulas");
   const frequenciaMedia = container.querySelector("#frequencia-media");
+  if (!totalAlunos || !totalAulas || !frequenciaMedia) return;
 
   totalAlunos.textContent = dadosRelatorio.matriculas.length;
   totalAulas.textContent = dadosRelatorio.frequencias.length;
 
-  // Calcula frequência média
   let totalPresencas = 0;
   let totalRegistros = 0;
 
@@ -310,15 +377,13 @@ function atualizarEstatisticasGerais(container) {
           if (s === 'presente' || s === 'p' || aluno.status === true) totalPresencas++;
         }
       });
-    }
-    else if (freq.presencas && typeof freq.presencas === 'object') {
+    } else if (freq.presencas && typeof freq.presencas === 'object') {
       Object.values(freq.presencas).forEach(presente => {
         totalRegistros++;
         const s = String(presente).toLowerCase();
         if (presente === true || s === 'presente' || s === 'p') totalPresencas++;
       });
-    }
-    else if (freq.status) {
+    } else if (freq.status) {
       totalRegistros++;
       const s = String(freq.status).toLowerCase();
       if (s === 'presente' || s === 'p' || freq.status === true) totalPresencas++;
@@ -331,6 +396,7 @@ function atualizarEstatisticasGerais(container) {
 
 function renderizarTabelaFrequencia(container) {
   const corpo = container.querySelector("#corpo-tabela-frequencia");
+  if (!corpo) return;
 
   if (!dadosRelatorio.matriculas.length) {
     corpo.innerHTML = '<tr><td colspan="4" class="sem-dados">Nenhum aluno matriculado nesta oficina</td></tr>';
@@ -343,8 +409,8 @@ function renderizarTabelaFrequencia(container) {
   }
 
   const estatisticas = {};
-  dadosRelatorio.matriculas.forEach(matricula => {
-    const key = upperize(matricula.nome || "");
+  dadosRelatorio.matriculas.forEach(m => {
+    const key = upperize(m.nome || "");
     estatisticas[key] = { presencas: 0, faltas: 0, total: 0 };
   });
 
@@ -359,8 +425,7 @@ function renderizarTabelaFrequencia(container) {
           else estatisticas[key].faltas++;
         }
       });
-    }
-    else if (freq.presencas && typeof freq.presencas === 'object') {
+    } else if (freq.presencas && typeof freq.presencas === 'object') {
       Object.entries(freq.presencas).forEach(([nome, presente]) => {
         const key = upperize(String(nome || '').trim());
         if (estatisticas[key]) {
@@ -370,8 +435,7 @@ function renderizarTabelaFrequencia(container) {
           else estatisticas[key].faltas++;
         }
       });
-    }
-    else if (freq.alunoNome && freq.status != null) {
+    } else if (freq.alunoNome && freq.status != null) {
       const key = upperize(freq.alunoNome);
       if (estatisticas[key]) {
         estatisticas[key].total++;
@@ -400,12 +464,11 @@ function renderizarTabelaFrequencia(container) {
     `;
     corpo.appendChild(linha);
   });
-
-  console.log("✅ Tabela de frequência renderizada (nomes em CAPS)");
 }
 
 function renderizarListaAulas(container) {
   const lista = container.querySelector("#lista-aulas");
+  if (!lista) return;
 
   if (!dadosRelatorio.planosDeAula.length) {
     lista.innerHTML = '<p class="sem-dados">Nenhum plano de aula registrado para esta oficina no período selecionado.</p>';
@@ -428,8 +491,6 @@ function renderizarListaAulas(container) {
     `;
     lista.appendChild(div);
   });
-
-  console.log("✅ Lista de aulas renderizada (nomes em CAPS)");
 }
 
 // ========= EXPORTAÇÕES =========
