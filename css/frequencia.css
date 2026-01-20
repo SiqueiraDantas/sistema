@@ -130,3 +130,9 @@ button.ativo {
   background-color: #f26729;
   color: white;
 }
+#filtro-frequencia-oficina{
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 5;
+}
+
