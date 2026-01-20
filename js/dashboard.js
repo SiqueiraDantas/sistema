@@ -1,15 +1,16 @@
-// js/dashboard.js (VERSÃO FINAL com lógica para Professor e Admin) — ✅ multi-banco
+// js/dashboard.js — (VERSÃO FINAL com lógica para Professor e Admin) ✅ multi-banco
+// ✅ Corrigido: evita "query requires an index" na frequência (filtra professor no JS)
+
 import { getDB, getAuthInst, onAuthStateChanged } from './firebase-config.js';
 import { collection, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /**
- * Função de inicialização do módulo do Dashboard.
- * @param {string} userRole - O papel do usuário ('professor' ou 'admin' ). Padrão é 'professor'.
+ * Inicializa o módulo do Dashboard.
+ * @param {string} userRole - 'professor' ou 'admin'. Padrão: 'professor'
  */
 export function init(userRole = 'professor') {
   console.log(`✅ Módulo de Dashboard inicializado para o perfil: ${userRole}`);
 
-  // ✅ pega AUTH do ano ativo (2025/2026)
   const auth = getAuthInst();
 
   onAuthStateChanged(auth, (user) => {
@@ -17,18 +18,26 @@ export function init(userRole = 'professor') {
       carregarDadosDoDashboard(user, userRole);
     } else {
       console.error("❌ Usuário não autenticado. Não é possível carregar o dashboard.");
-      const a = document.getElementById('dashboard-total-turmas');
-      const b = document.getElementById('dashboard-total-planos');
-      const c = document.getElementById('dashboard-frequencia-hoje');
-      if (a) a.textContent = '-';
-      if (b) b.textContent = '-';
-      if (c) c.textContent = '-';
+      setCards('-', '-', '-');
     }
   });
 }
 
+function setCards(turmas, planos, freq, freqColor = '') {
+  const turmasValor = document.getElementById('dashboard-total-turmas');
+  const planosValor = document.getElementById('dashboard-total-planos');
+  const frequenciaValor = document.getElementById('dashboard-frequencia-hoje');
+
+  if (turmasValor) turmasValor.textContent = turmas;
+  if (planosValor) planosValor.textContent = planos;
+  if (frequenciaValor) {
+    frequenciaValor.textContent = freq;
+    if (freqColor) frequenciaValor.style.color = freqColor;
+  }
+}
+
 async function carregarDadosDoDashboard(user, userRole) {
-  const emailProfessor = user.email;
+  const emailProfessor = user?.email || "";
 
   const turmasValor = document.getElementById('dashboard-total-turmas');
   const planosValor = document.getElementById('dashboard-total-planos');
@@ -39,71 +48,85 @@ async function carregarDadosDoDashboard(user, userRole) {
     return;
   }
 
-  turmasValor.textContent = '...';
-  planosValor.textContent = '...';
-  frequenciaValor.textContent = '...';
+  setCards('...', '...', '...');
 
   try {
-    // ✅ pega DB do ano ativo (2025/2026)
     const db = getDB();
 
-    // --- PLANOS DE AULA ---
+    // =========================
+    // 1) PLANOS DE AULA
+    // =========================
     let planosQuery;
     if (userRole === 'admin') {
       planosQuery = query(collection(db, "planosDeAula"));
     } else {
-      planosQuery = query(collection(db, "planosDeAula"), where("professorEmail", "==", emailProfessor));
+      // professor vê apenas os planos dele
+      planosQuery = query(
+        collection(db, "planosDeAula"),
+        where("professorEmail", "==", emailProfessor)
+      );
     }
 
     const planosSnapshot = await getDocs(planosQuery);
     planosValor.textContent = `${planosSnapshot.size} registrados`;
 
-    // --- TURMAS (com base nos planos) ---
+    // =========================
+    // 2) TURMAS (base nos planos)
+    // =========================
     const oficinas = new Set();
     planosSnapshot.forEach(doc => {
-      const o = doc.data()?.oficina;
+      const data = doc.data ? doc.data() : {};
+      const o = data?.oficina;
       if (o) oficinas.add(o);
     });
     turmasValor.textContent = String(oficinas.size);
 
-    // --- FREQUÊNCIA DE HOJE ---
-    const hoje = new Date();
-    const inicioDoDia = new Date(hoje);
+    // =========================
+    // 3) FREQUÊNCIA DE HOJE
+    // =========================
+    // ✅ Evita índice composto:
+    // - Busca registros de HOJE filtrando só por "data" (range)
+    // - Se for professor, filtra por professorEmail no JS
+    const agora = new Date();
+    const inicioDoDia = new Date(agora);
     inicioDoDia.setHours(0, 0, 0, 0);
 
-    const fimDoDia = new Date(hoje);
+    const fimDoDia = new Date(agora);
     fimDoDia.setHours(23, 59, 59, 999);
 
-    let freqQuery;
+    const freqBaseQuery = query(
+      collection(db, "frequencias"),
+      where("data", ">=", Timestamp.fromDate(inicioDoDia)),
+      where("data", "<=", Timestamp.fromDate(fimDoDia))
+    );
+
+    const freqSnapshot = await getDocs(freqBaseQuery);
+
+    let temRegistroHoje = false;
+
     if (userRole === 'admin') {
-      freqQuery = query(
-        collection(db, "frequencias"),
-        where("data", ">=", Timestamp.fromDate(inicioDoDia)),
-        where("data", "<=", Timestamp.fromDate(fimDoDia))
-      );
+      // admin: basta ter qualquer registro hoje
+      temRegistroHoje = !freqSnapshot.empty;
     } else {
-      freqQuery = query(
-        collection(db, "frequencias"),
-        where("professorEmail", "==", emailProfessor),
-        where("data", ">=", Timestamp.fromDate(inicioDoDia)),
-        where("data", "<=", Timestamp.fromDate(fimDoDia))
-      );
+      // professor: filtra no JS (sem índice composto)
+      freqSnapshot.forEach(doc => {
+        const data = doc.data ? doc.data() : {};
+        if (String(data?.professorEmail || "").toLowerCase() === String(emailProfessor).toLowerCase()) {
+          temRegistroHoje = true;
+        }
+      });
     }
 
-    const freqSnapshot = await getDocs(freqQuery);
-
-    if (freqSnapshot.empty) {
+    if (!temRegistroHoje) {
       frequenciaValor.textContent = 'Pendente';
-      frequenciaValor.style.color = '#F26729';
+      frequenciaValor.style.color = '#F26729'; // laranja
     } else {
       frequenciaValor.textContent = 'Registrada';
-      frequenciaValor.style.color = '#2E7D32';
+      frequenciaValor.style.color = '#2E7D32'; // verde
     }
 
   } catch (error) {
     console.error("❌ Erro ao carregar dados do dashboard:", error);
-    turmasValor.textContent = 'Erro';
-    planosValor.textContent = 'Erro';
-    frequenciaValor.textContent = 'Erro';
+    setCards('Erro', 'Erro', 'Erro');
   }
 }
