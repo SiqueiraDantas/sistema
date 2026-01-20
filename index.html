@@ -14,13 +14,20 @@
         <h1>Bem-vindo</h1>
         <p>Faça login em sua conta</p>
       </div>
-      
-      <form class="login-form">
+
+      <form class="login-form" id="loginForm" autocomplete="on">
         <div class="input-group">
           <label for="email">Email</label>
           <div class="input-wrapper">
             <i class="fas fa-envelope input-icon"></i>
-            <input type="email" id="email" name="email" placeholder="Digite seu email" required />
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Digite seu email"
+              autocomplete="username"
+              required
+            />
           </div>
         </div>
 
@@ -28,8 +35,15 @@
           <label for="password">Senha</label>
           <div class="input-wrapper password-wrapper">
             <i class="fas fa-lock input-icon"></i>
-            <input type="password" id="password" name="password" placeholder="Digite sua senha" required />
-            <button type="button" class="toggle-password" onclick="togglePassword()">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" class="toggle-password" onclick="togglePassword()" aria-label="Mostrar/ocultar senha">
               <i class="fas fa-eye" id="eye-icon"></i>
             </button>
           </div>
@@ -44,25 +58,24 @@
           <a href="#" class="forgot-password">Esqueceu a senha?</a>
         </div>
 
-        <!-- ✅ NOVO: Ano letivo com duas bolinhas (radio) -->
-<div class="input-group">
-  <label>Ano letivo</label>
+        <!-- ✅ Ano letivo (duas bolinhas) -->
+        <div class="input-group">
+          <label>Ano letivo</label>
 
-  <div class="ano-radio">
-    <label class="ano-option">
-      <input type="radio" name="anoLetivo" value="2025" />
-      <span class="dot"></span>
-      <span class="text">2025</span>
-    </label>
+          <div class="ano-radio" role="radiogroup" aria-label="Ano letivo">
+            <label class="ano-option" for="ano2025">
+              <input id="ano2025" type="radio" name="anoLetivo" value="2025" />
+              <span class="dot"></span>
+              <span class="text">2025</span>
+            </label>
 
-    <label class="ano-option">
-      <input type="radio" name="anoLetivo" value="2026" checked />
-      <span class="dot"></span>
-      <span class="text">2026</span>
-    </label>
-  </div>
-</div>
-
+            <label class="ano-option" for="ano2026">
+              <input id="ano2026" type="radio" name="anoLetivo" value="2026" checked />
+              <span class="dot"></span>
+              <span class="text">2026</span>
+            </label>
+          </div>
+        </div>
 
         <button type="submit" class="login-btn">
           <span>Entrar</span>
@@ -77,7 +90,8 @@
       </form>
     </div>
 
-    <div class="background-decoration">
+    <!-- ✅ Decoração com clique desativado (não atrapalha os botões) -->
+    <div class="background-decoration" aria-hidden="true">
       <div class="circle circle-1"></div>
       <div class="circle circle-2"></div>
       <div class="circle circle-3"></div>
@@ -87,4 +101,3 @@
   <script type="module" src="js/script.js"></script>
 </body>
 </html>
-
