@@ -44,17 +44,25 @@
           <a href="#" class="forgot-password">Esqueceu a senha?</a>
         </div>
 
-        <!-- ✅ NOVO: Ano letivo (em cima do botão Entrar) -->
-        <div class="input-group">
-          <label for="anoLetivo">Ano letivo</label>
-          <div class="input-wrapper">
-            <i class="fas fa-calendar-days input-icon"></i>
-            <select id="anoLetivo" name="anoLetivo" required>
-              <option value="2026" selected>2026</option>
-              <option value="2025">2025</option>
-            </select>
-          </div>
-        </div>
+        <!-- ✅ NOVO: Ano letivo com duas bolinhas (radio) -->
+<div class="input-group">
+  <label>Ano letivo</label>
+
+  <div class="ano-radio">
+    <label class="ano-option">
+      <input type="radio" name="anoLetivo" value="2025" />
+      <span class="dot"></span>
+      <span class="text">2025</span>
+    </label>
+
+    <label class="ano-option">
+      <input type="radio" name="anoLetivo" value="2026" checked />
+      <span class="dot"></span>
+      <span class="text">2026</span>
+    </label>
+  </div>
+</div>
+
 
         <button type="submit" class="login-btn">
           <span>Entrar</span>
@@ -79,3 +87,4 @@
   <script type="module" src="js/script.js"></script>
 </body>
 </html>
+
