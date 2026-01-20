@@ -15,7 +15,7 @@
         <p>Faça login em sua conta</p>
       </div>
       
-      <form class="login-form" id="loginForm">
+      <form class="login-form">
         <div class="input-group">
           <label for="email">Email</label>
           <div class="input-wrapper">
@@ -29,7 +29,7 @@
           <div class="input-wrapper password-wrapper">
             <i class="fas fa-lock input-icon"></i>
             <input type="password" id="password" name="password" placeholder="Digite sua senha" required />
-            <button type="button" class="toggle-password" id="togglePasswordBtn">
+            <button type="button" class="toggle-password" onclick="togglePassword()">
               <i class="fas fa-eye" id="eye-icon"></i>
             </button>
           </div>
@@ -44,7 +44,7 @@
           <a href="#" class="forgot-password">Esqueceu a senha?</a>
         </div>
 
-        <!-- ✅ NOVO: Ano letivo (fica em cima do Entrar) -->
+        <!-- ✅ NOVO: Ano letivo (em cima do botão Entrar) -->
         <div class="input-group">
           <label for="anoLetivo">Ano letivo</label>
           <div class="input-wrapper">
@@ -54,10 +54,9 @@
               <option value="2025">2025</option>
             </select>
           </div>
-          <small class="hint">Selecione o banco de dados correto antes de entrar.</small>
         </div>
 
-        <button type="submit" class="login-btn" id="loginBtn">
+        <button type="submit" class="login-btn">
           <span>Entrar</span>
           <i class="fas fa-arrow-right"></i>
         </button>
