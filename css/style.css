@@ -375,3 +375,15 @@ body {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* Ajuste do select para ficar igual aos inputs */
+.input-wrapper select {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  padding: 12px 12px 12px 42px; /* espaço do ícone */
+  border-radius: 12px;
+  appearance: none;
+}
+
